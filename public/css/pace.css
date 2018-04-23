@@ -1,0 +1,32 @@
+body.pace-small .pace {
+  -webkit-pointer-events: none;
+  pointer-events: none;
+
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+
+body.pace-small .pace-inactive {
+  display: none;
+}
+
+body.pace-small .pace {
+  z-index: 999999999999999999;
+  position: fixed;
+}
+
+body.pace-small .pace .pace-progress {
+  z-index: 999999999999999999;
+  position: fixed;
+  background: #FFF500;
+  z-index: 2000;
+  top: 0;
+  right: 100%;
+  width: 100%;
+  height: 2px;
+  -webkit-transition: width 1s;
+  -moz-transition: width 1s;
+  -o-transition: width 1s;
+  transition: width 1s;
+}
