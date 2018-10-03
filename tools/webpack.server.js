@@ -1,49 +1,82 @@
-var fs = require('fs');
-var path = require('path');
-var webpack = require('webpack');
-var deepmerge = require('deepmerge');
-var webpackCommonConfig = require('./webpack.common');
+'use strict';
 
-var nodeModules = {};
-fs.readdirSync('node_modules')
-  .filter(function(x) {
-    return ['.bin'].indexOf(x) === -1;
-  })
-  .forEach(function(mod) {
-    nodeModules[mod] = 'commonjs ' + mod;
-  });
+const
+	fs = require('fs'),
+	path = require('path'),
+	config = require('../api/config');
 
-var sourceMapSupportModule = "require('source-map-support').install({environment: 'node'});\n\n";
+const externals = ( () =>  {
+	const
+		externals = {},
+		ignoreModules = ['.bin'];
+	fs.readdirSync(path.resolve(__dirname, '../node_modules'))
+		.filter(mod => ignoreModules.indexOf(mod) === -1)
+		.forEach(mod =>  {
+			externals[mod] = 'commonjs ' + mod;
+		});
+	return externals;
+})();
 
-var output = { path: path.join(process.cwd(), 'tmp'), filename: 'bundle.js' };
-
-if (process.env.NO_OUTPUT_PATH) {
-  output = { filename: 'server.js' };
-}
-
-var loaders = webpackCommonConfig.module.loaders.concat();
-loaders.push({ test: /\.scss$/, loader: 'null' });
-
-delete webpackCommonConfig.module;
-
-module.exports = deepmerge({
-  devtool: 'source-map',
-  entry: [
-    './server.babel.js'
-  ],
-  output: output,
-  target: 'node',
-  module: {
-    loaders: loaders
-  },
-  plugins: [
-    new webpack.BannerPlugin(sourceMapSupportModule, {
-      raw: true,
-      entryOnly: true
-    }),
-    new webpack.NoErrorsPlugin(),
-    new webpack.DefinePlugin({__CLIENT__: false, __SERVER__: true, __PRODUCTION__: false, __DEV__: true, "process.env.NODE_ENV": '"'+process.env.NODE_ENV+'"'}),
-    new webpack.IgnorePlugin(/vertx/)
-  ],
-  externals: nodeModules
-}, webpackCommonConfig);
+module.exports = {
+	devtool: config.sourcemap,
+	entry: './server.babel.js',
+	output: {
+		filename: 'server.js',
+		path: path.resolve(__dirname, '../build'),
+	},
+	target: 'node',
+	externals,
+	module: {
+		rules: [
+			{
+				test: /\.js$/,
+				use: [
+					'cache-loader',
+					{
+						loader: 'babel-loader',
+						options: {
+							presets: [
+								[
+									'env',
+									{
+										targets: {
+											node: 'current',
+										},
+										useBuiltIns: true,
+										loose: true,
+									}
+								],
+								'react',
+								'stage-0',
+							],
+							plugins: [
+								'transform-decorators-legacy',
+								'transform-runtime',
+								'transform-export-extensions',
+							],
+							compact: true,
+						}
+					}
+				],
+				exclude: /node_modules|bower_components/,
+			},
+			{
+				test: /\.(woff|woff2|ttf|eot|svg)$/,
+				loader: 'file-loader',
+				options: {
+					name: './assets/[hash].[ext]',
+					emitFile: false,
+				}
+			},
+		],
+	},
+	stats: 'minimal',
+	context: path.dirname(__dirname),
+	mode: process.env.NODE_ENV,
+	resolve: {
+		modules: [
+			'public',
+			'node_modules'
+		]
+	},
+};

@@ -1,40 +1,40 @@
 import React from 'react';
 import {connect} from 'react-redux';
 
-import actions from '../redux/actions';
-import Pagination from '../components/Pagination';
-import Loading from '../components/Loading';
-import Select from '../components/Select';
-
 import makeTranslater from '../translate';
 
-import {makeApiData} from '../api';
+import {
+	filterValue,
+	moduleActions,
+	getStatusTitle,
+	getStatusOptions,
+	filtersFromQuery,
+	queryFromFilters,
+} from '../utils';
 
-import {getStatusLabel} from '../utils';
+import {addView} from '../redux/reducers/views';
+import reducer from '../redux/reducers/city';
+import * as actions from '../redux/actions/city';
+addView('city', reducer);
 
 import {
 	Row,
 	Col,
-	Grid,
-	Panel,
-	Table,
-	PanelBody,
-	PanelHeader,
-	PanelContainer,
 	Icon,
+	View,
+	Text,
+	Modal,
 	Button,
-	Form,
-	FormGroup,
-	ControlLabel,
-	InputGroup,
-	FormControl,
+	Select,
+	Loading,
 	Checkbox,
 	HelpBlock,
-} from '@sketchpixy/rubix';
-
-import url from 'url';
-
-const viewName = 'city';
+	DataTable,
+	FormGroup,
+	Pagination,
+	FormControl,
+	ControlLabel,
+} from '../components';
 
 @connect(state => ({
 	session: state.session,
@@ -42,425 +42,304 @@ const viewName = 'city';
 	loading: state.view.loading || false,
 	translations: state.translations,
 	lang: state.lang,
-	...state.view.city
+	...state.view.state,
 }))
-export default class City extends React.Component {
-	constructor(props) {
-		super(props);
-
-		this.handleDataUpdate = event => {
-			let value;
-			if (event.target.type === 'checkbox')
-				value = event.target.checked;
-			else
-				value = event.target.value;
-			this.updateData(event.target.name, value);
-		}
-
-		this.handleEdit = event => {
-			this.edit(event.target.getAttribute('data-item-id'));
-		};
-		this.handleState = event => {
-			this.changeStatus(
-				event.target.getAttribute('data-item-id'),
-				event.target.getAttribute('data-item-status') === '1' ? '0' : '1',
-			)
-		};
-	}
-
+export default class Govtidentity extends React.Component {
 	static fetchData(store) {
-		return store.dispatch(
-			actions.city.init(
-				store.getState()
-			)
-		);
+		return store.dispatch(actions.init(store.getState()));
 	}
+
+	permissions = moduleActions(this.props.session.modules, 'city');
+	toggleFilters = () => {
+		if (this.props.filters === null) {
+			this.props.dispatch({
+				type: 'SHOW_FILTERS',
+				filters: filtersFromQuery(this.props.query)
+			});
+		} else {
+			this.props.dispatch({
+				type: 'HIDE_FILTERS',
+			});
+		}
+	};
+	search = () => {
+		this.props.dispatch({
+			type: 'SET_QUERY',
+			query: queryFromFilters(this.props.filters),
+		});
+		this.props.router.push(this.props.router.createPath(this.props.router.location.pathname));
+	};
+	reset = () => {
+		this.props.dispatch({
+			type: 'SET_QUERY',
+			query: [],
+		});
+		this.props.router.push(this.props.router.location);
+	};
+	changePage = page => this.props.router.push(
+		this.props.router.createPath({
+			pathname: this.props.router.location.pathname,
+			query: {page},
+		})
+	);
+	updateFilter = event => this.props.dispatch(actions.updateFilter(event));
+
+	startAdd = () => this.props.dispatch(actions.startAdd(this.props));
+	edit = event => this.props.dispatch(
+		actions.edit(
+			this.props,
+			+event.currentTarget.getAttribute('data-item-id')
+		)
+	);
+	hideDataModal = () => this.props.dispatch({type: 'HIDE_DATA_MODAL'});
+	updateData = event => this.props.dispatch({
+		type: 'UPDATE_DATA_VALUE',
+		name: event.currentTarget.name,
+		value: event.currentTarget.value,
+	});
+	changeCountry = event => this.props.dispatch(
+		actions.changeCountry(
+			this.props,
+			event.currentTarget.value
+		)
+	);
+	save = () => this.props.dispatch(actions.save(this.props));
+
+	changeStatus = event => this.props.dispatch(
+		actions.changeStatus(
+			this.props,
+			+event.currentTarget.getAttribute('data-item-id'),
+			+event.currentTarget.value,
+			+event.currentTarget.getAttribute('data-item-status'),
+		)
+	);
 
 	render() {
 		if (this.props.loading) return <Loading/>;
-		let content, __ = makeTranslater(
-			this.props.translations,
-			this.props.lang.code
+		let __ = makeTranslater(this.props.translations, this.props.lang.code);
+		return (
+			<React.Fragment>
+				<View
+					search={this.props.query}
+					filters={this.renderFilters(__)}
+					actions={this.renderViewActions(__)}>
+					{this.renderData(__)}
+				</View>
+				<Modal
+					onHide={this.hideDataModal}
+					show={this.props.item !== false}>
+					{
+						this.props.item &&
+						<Modal.Header closeButton>
+							<Modal.Title>
+								{
+									this.props.item.id ?
+									<Text>Edit City</Text> :
+									<Text>Add City</Text>
+								}
+							</Modal.Title>
+						</Modal.Header>
+					}
+					<Modal.Body>
+						{this.props.item === null && <Loading/>}
+						{
+							this.props.item &&
+							<React.Fragment>
+								<FormGroup
+									controlId='name'
+									validationState={this.props.errors.name ? 'error': null}>
+									<ControlLabel><Text>Name</Text></ControlLabel>
+									<FormControl
+										autoFocus
+										name='name'
+										type='text'
+										placeholder={__('Name')}
+										onChange={this.updateData}
+										value={this.props.item.name}/>
+									<HelpBlock>{this.props.errors.name}</HelpBlock>
+								</FormGroup>
+								<FormGroup
+									controlId='alias'
+									validationState={this.props.errors.alias ? 'error': null}>
+									<ControlLabel><Text>Short Name</Text></ControlLabel>
+									<FormControl
+										name='alias'
+										type='text'
+										onChange={this.updateData}
+										value={this.props.item.alias}
+										placeholder={__('Short Name')}/>
+									<HelpBlock>{this.props.errors.alias}</HelpBlock>
+								</FormGroup>
+								<FormGroup
+									controlId='countryId'
+									validationState={this.props.errors.countryId ? 'error': null}>
+									<ControlLabel><Text>Country</Text></ControlLabel>
+									<Select
+										name='countryId'
+										onChange={this.changeCountry}
+										value={this.props.item.countryId}
+										options={this.props.meta.countries}/>
+									<HelpBlock>{this.props.errors.countryId}</HelpBlock>
+								</FormGroup>
+								<FormGroup
+									controlId='code'
+									validationState={this.props.errors.stateId ? 'error': null}>
+									<ControlLabel><Text>State</Text></ControlLabel>
+									<Select
+										name='stateId'
+										onChange={this.updateData}
+										value={this.props.item.stateId}
+										options={this.props.meta.states || []}
+										isLoading={this.props.item.states === null}/>
+									<HelpBlock>{this.props.errors.stateId}</HelpBlock>
+								</FormGroup>
+								<Row>
+									<Col xs={6}>
+										<Checkbox
+											name='is_active'
+											onChange={this.updateData}
+											value={this.props.item.is_active}>
+											<ControlLabel><Text>Status</Text></ControlLabel>
+										</Checkbox>
+									</Col>
+									<Col xs={6} className='text-right'>
+										<Button
+											bsStyle='primary'
+											onClick={this.save}>
+											<Text>Submit</Text>
+										</Button>
+									</Col>
+								</Row>
+							</React.Fragment>
+						}
+					</Modal.Body>
+				</Modal>
+			</React.Fragment>
 		);
-		switch(this.props.viewState) {
-			case 'DATA_FORM':
-				content = this.renderAdd(__);
-				break;
-			default:
-				content = this.renderList(__);
+	}
+
+	renderFilters(__) {
+		const filters = this.props.filters;
+		if (filters === null) return false;
+		return (
+			<View.Filters search={this.search} remove={this.toggleFilters}>
+				<FormControl
+					type='text'
+					title={__('Name')}
+					name='citydetail__name'
+					placeholder={__('Name')}
+					onChange={this.updateFilter}
+					value={filterValue(filters, 'citydetail__name', '')} />
+				<FormControl
+					type='text'
+					name='city__alias'
+					title={__('Short Name')}
+					onChange={this.updateFilter}
+					placeholder={__('Short Name')}
+					value={filterValue(filters, 'city__alias', '')} />
+				<FormControl
+					type='text'
+					title={__('State')}
+					name='statedetail__name'
+					placeholder={__('State')}
+					onChange={this.updateFilter}
+					value={filterValue(filters, 'statedetail__name', '')} />
+				<FormControl
+					type='text'
+					name='countrydetail__name'
+					title={__('Country Name')}
+					onChange={this.updateFilter}
+					placeholder={__('Country Name')}
+					value={filterValue(filters, 'countrydetail__name', '')} />
+				<Select
+					title={__('Status')}
+					name='city__is_active'
+					onChange={this.updateFilter}
+					options={getStatusOptions(__)}
+					placeholder={__('Select Status')}
+					value={filterValue(filters, 'city__is_active', null)}/>
+			</View.Filters>
+		);
+	}
+
+	renderViewActions(__) {
+		return (
+			<View.Actions>
+				{
+					this.permissions.add &&
+					<View.Action onClick={this.startAdd}>
+						<Text>Add New</Text>
+					</View.Action>
+				}
+				<View.Action onClick={this.toggleFilters} title={__('Filters')}>
+					<Icon glyph='fa-filter'/>
+				</View.Action>
+				<View.Action onClick={this.reset} title={__('Reset')}>
+					<Icon glyph='fa-redo-alt'/>
+				</View.Action>
+			</View.Actions>
+		);
+	}
+
+	renderData(__) {
+		return (
+			<React.Fragment>
+				<DataTable>
+					<thead>
+						<tr>
+							<td className='tw-8'><Text>Status</Text></td>
+							<td className='tw-20'><Text>Name</Text></td>
+							<td className='tw-20'><Text>Short Name</Text></td>
+							<td className='tw-20'><Text>State</Text></td>
+							<td className='tw-20'><Text>Country</Text></td>
+							<td>
+								<DataTable.ActionColumnHeading/>
+							</td>
+						</tr>
+					</thead>
+					<tbody>
+						{this.renderDataRows(__)}
+					</tbody>
+				</DataTable>
+				<Pagination data={this.props.pageInfo} onSelect={this.changePage}/>
+			</React.Fragment>
+		);
+	}
+
+	renderDataRows(__) {
+		if (this.props.items.length === 0) {
+			return <DataTable.NoDataRow colSpan={5}/>;
 		}
-		return (
-			<Row>
-				<Col xs={12}>
-					<PanelContainer controls={false} className="overflow-visible">
-						<Panel>
-							<PanelHeader className='bg-green'>
-								<Grid>
-									<Row>
-										<Col xs={4} md={10} className='fg-white'>
-											<h3>{__('City')}</h3>
-										</Col>
-										<Col xs={8} md={2}>
-											<h3>
-												{this.props.viewState === 'LIST' &&
-												<Button
-													inverse
-													outlined
-													style={{marginBottom: 5}}
-													bsStyle='default'
-													onClick={::this.startAddNew}
-												>
-													{__('Add New')}
-												</Button>}
-												{this.props.viewState === 'DATA_FORM' &&
-												<Button
-													inverse
-													outlined
-													style={{marginBottom: 5}}
-													bsStyle='default'
-													onClick={::this.viewList}
-												>
-													{__('View List')}
-												</Button>}
-											</h3>
-										</Col>
-									</Row>
-								</Grid>
-							</PanelHeader>
-							<PanelBody>
-								<Grid>
-									{content}
-								</Grid>
-							</PanelBody>
-						</Panel>
-					</PanelContainer>
-				</Col>
-			</Row>
-		);
-	}
-
-	renderList(__) {
-		return (
-			<Row key="city-list">
-				<Col xs={12}>
-					<Table condensed striped>
-						<thead>
-							<tr>
-								<th width={'6%'}>{__('S No.')}</th>
-								<th>{__('Name')}</th>
-								<th>{__('Alias')}</th>
-								<th>{__('State')}</th>
-								<th>{__('Country')}</th>
-								<th>{__('Status')}</th>
-								<th>{__('Actions')}</th>
-							</tr>
-							<tr>
-								<td></td>
-								<td>
-									<FormControl
-										type='text'
-										onChange={this.makeFilter('citydetail__name')}
-										value={this.props.filter.citydetail__name || ''}
-										placeholder={__('Name') }
-									/>
-								</td>
-								<td>
-									<FormControl
-										type='text'
-										onChange={this.makeFilter('city__alias')}
-										value={this.props.filter.city__alias || ''}
-										placeholder={__('Alias') }
-									/>
-								</td>
-								<td>
-									<FormControl
-										type='text'
-										onChange={this.makeFilter('statedetail__name')}
-										value={this.props.filter.statedetail__name || ''}
-										placeholder={__('Name') }
-									/>
-								</td>
-								<td>
-									<FormControl
-										type='text'
-										onChange={this.makeFilter('countrydetail__name')}
-										value={this.props.filter.countrydetail__name || ''}
-										placeholder={__('Name') }
-									/>
-								</td>
-								<td>
-									<FormControl
-										componentClass="select"
-										placeholder="select"
-										onChange={this.makeFilter('city__is_active')}
-										value={this.props.filter.city__is_active || ''}
-									>
-										<option value=''>{__('All')}</option>
-										<option value='1'>{__('Active')}</option>
-										<option value='0'>{__('Inactive')}</option>
-									</FormControl>
-								</td>
-								<td>
-									<Icon
-										className={'fg-darkcyan'}
-										style={{fontSize: 20}}
-										glyph={'icon-feather-search'}
-										onClick={::this.search}
-									/>
-									<Icon
-										className={'fg-brown'}
-										style={{fontSize: 20}}
-										glyph={'icon-feather-reload'}
-										onClick={::this.reset}
-									/>
-								</td>
-							</tr>
-						</thead>
-						<tbody>
-						{this.props.items.map(this.getDataRow, this)}
-						{this.props.items.length === 0 && this.getNoDataRow(__)}
-						</tbody>
-					</Table>
-				</Col>
-				<Col xs={12}>
-					<Pagination
-						data={this.props.pageInfo}
-						onSelect={::this.changePage}
-					/>
-				</Col>
-			</Row>
-		);
-	}
-
-	renderAdd(__) {
-		return (
-			<Row>
-				<Col xs={12} md={8} lg={6}>
-					<Form>
-						<FormGroup
-							controlId='name'
-							validationState={this.props.errors.name ? 'error': null}
-						>
-							<ControlLabel>{__('Name')}</ControlLabel>
-							<FormControl
-								type='text'
-								placeholder={__('Name')}
-								value={this.props.item.name}
-								name='name'
-								onChange={this.handleDataUpdate}
-							/>
-							<HelpBlock>{this.props.errors.name}</HelpBlock>
-						</FormGroup>
-						<FormGroup
-							controlId='alias'
-							validationState={this.props.errors.alias ? 'error': null}
-						>
-							<ControlLabel>{__('Alias')}</ControlLabel>
-							<FormControl
-								type='text'
-								placeholder={__('Alias')}
-								value={this.props.item.alias}
-								name='alias'
-								onChange={this.handleDataUpdate}
-							/>
-							<HelpBlock>{this.props.errors.alias}</HelpBlock>
-						</FormGroup>
-						<FormGroup
-							controlId='countryId'
-							validationState={this.props.errors.countryId ? 'error': null}
-						>
-							<ControlLabel>{__('Country')}</ControlLabel>
-							<Select
-								name="countryId"
-								placeholder={__('Please Select')}
-								onChange={this.handleDataUpdate}
-								value={this.props.item.countryId}
-								options={this.props.helperData.countries}
-							/>
-							<HelpBlock>{this.props.errors.countryId}</HelpBlock>
-						</FormGroup>
-
-						<FormGroup
-							controlId='stateId'
-							validationState={this.props.errors.stateId ? 'error': null}
-						>
-							<ControlLabel>{__('State')}</ControlLabel>
-							<Select
-								name="stateId"
-								placeholder={__('Please Select')}
-								onChange={this.handleDataUpdate}
-								options={this.props.helperData.availableStates}
-								isLoading={this.props.helperData.loadingAvailableStates}
-								value={this.props.item.stateId}
-							/>
-							<HelpBlock>{this.props.errors.stateId}</HelpBlock>
-						</FormGroup>
-
-						<FormGroup controlId='is_active'>
-							<Checkbox
-								name='is_active'
-								onChange={this.handleDataUpdate}
-								checked={this.props.item.is_active}
-								>
-								{__('Active')}
-							</Checkbox>
-						</FormGroup>
-					</Form>
-					<Row>
-						<Col xs={12}>
-							<div>
-								<Button
-									outlined
-									bsStyle='lightgreen'
-									onClick={::this.viewList}>
-									{__('Cancel')}
-								</Button>{' '}
-								<Button
-									outlined
-									bsStyle='lightgreen'
-									onClick={::this.save}>
-									{__('Submit')}
-								</Button>
-							</div>
-							<br/>
-						</Col>
-					</Row>
-				</Col>
-			</Row>
-		)
-	}
-
-	getDataRow(item, index) {
-		let __ = makeTranslater(
-			this.props.translations,
-			this.props.lang.code
-		);
-
-		let count = (this.props.pageInfo.pageLimit * (this.props.pageInfo.currentPage - 1));
-
-		return (
+		return this.props.items.map(item => (
 			<tr key={item.id}>
-				<td>{count + ++index}</td>
-				<td>{item.citydetails[0].name}</td>
-				<td>{item.alias}</td>
-				<td>{item.state.statedetails[0].name}</td>
-				<td>{item.country.countrydetails[0].name}</td>
-				<td>{__(getStatusLabel(item.is_active, __))}</td>
-				<td>
-					<Icon
-						className={'fg-brown'}
-						style={{fontSize: 20}}
-						glyph={'icon-simple-line-icons-note'}
-						onClick={this.handleEdit}
+				<td className='tw-8'>
+					<Checkbox
+						inline
 						data-item-id={item.id}
-					/>
-					<Icon
-						className={item.is_active === 1 ? 'fg-deepred': 'fg-darkgreen'}
-						style={{fontSize: 20}}
-						glyph={this.getStatusIcon(item.is_active)}
-						onClick={this.handleState}
-						data-item-id={item.id}
+						value={item.is_active}
+						onChange={this.changeStatus}
 						data-item-status={item.is_active}
-					/>
+						disabled={!this.permissions.status}
+						title={getStatusTitle(item.is_active, __)}/>
+				</td>
+				<td className='tw-20'>{item.citydetails[0].name}</td>
+				<td className='tw-20'>{item.alias}</td>
+				<td className='tw-20'>{item.state.statedetails[0].name}</td>
+				<td className='tw-20'>{item.country.countrydetails[0].name}</td>
+				<td>
+					<DataTable.Actions id={'item-actions-' + item.id}>
+						{
+							this.permissions.edit &&
+							<DataTable.Action
+								text='Edit'
+								glyph='fa-edit'
+								onClick={this.edit}
+								data-item-id={item.id}/>
+						}
+					</DataTable.Actions>
 				</td>
 			</tr>
-		)
-	}
-
-
-	getStatusIcon(status) {
-		switch(status) {
-			case 0:
-				return 'icon-simple-line-icons-check';
-			case 1:
-				return 'icon-simple-line-icons-close';
-			case -1:
-				return 'icon-fontello-spin4';
-		}
-	}
-
-	getNoDataRow(__) {
-		return (
-			<tr key={0}>
-				<td colSpan={7}>{__('No data found')}</td>
-			</tr>
-		)
-	}
-
-	changePage(page) {
-		this.props.router.push(
-			url.format({
-				pathname: this.props.location.pathname,
-				query: {
-					...this.props.location.query,
-					page: page
-				}
-			})
-		);
-	}
-
-	makeFilter(name) {
-		let dispatch = this.props.dispatch;
-		return event => {
-			dispatch({
-				type: 'UPDATE_FILTER',
-				name,
-				value: event.target.value
-			});
-		}
-	}
-
-	updateData(name, value) {
-		this.props.dispatch(actions.city.updateData(name, value));
-		let {countryId} = this.props.item;
-		if (name === 'countryId') countryId = value;
-
-		if (value && (countryId && name === 'countryId')) {
-			this.props.dispatch(
-				actions.city.updateAvailableState(
-					this.props,
-					countryId
-				)
-			);
-		}
-	}
-
-	search() {
-		this.props.router.push('/admin/city');
-	}
-
-	reset() {
-		this.props.dispatch({
-			type: 'RESET_FILTERS'
-		});
-		this.props.router.push('/admin/city');
-	}
-
-	startAddNew() {
-		this.props.dispatch(actions.city.startAdd(this.props));
-	}
-
-	viewList() {
-		this.props.dispatch(actions.city.viewList())
-	}
-
-	edit(itemId) {
-		this.props.dispatch(actions.city.edit(this.props, itemId));
-	}
-
-	save() {
-		this.props.dispatch(
-			actions.city.save(this.props, this.props.session.id)
-		);
-	}
-
-	changeStatus(itemId, status) {
-		this.props.dispatch(
-			actions.city.changeStatus(
-				this.props,
-				itemId,
-				status
-			)
-		)
+		));
 	}
 }
+

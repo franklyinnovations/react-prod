@@ -1,85 +1,89 @@
 import React from 'react';
 import {connect} from 'react-redux';
-import {IndexLink, Link} from 'react-router';
-import makeTranslater from '../translate';
+import {Link, IndexLink} from 'react-router';
+
+import makeTranslater from "../translate";
+import {lanugages} from '../config';
 
 @connect(state => ({
-	session: state.session,
-	location: state.location,
 	translations: state.translations,
-	lang: state.lang
+	lang: state.lang,
+	location: state.location,
+	lanugages: (state.session && state.session.lanugages) || lanugages,
+	logged: state.session && !!state.session.id
 }))
 export default class Footer extends React.Component {
 	render() {
-		let __ = makeTranslater(
-			this.props.translations,
-			this.props.lang.code
-		);
+		let _ = makeTranslater(this.props.translations, this.props.lang.code);
 		return (
-			<footer className="main-footer">
+			<footer className="site-footer">
+				<a href="#top" className="scroll-top" title="Scroll Top">
+					<i className="fas fa-angle-double-up"/>
+				</a>
 				<div className="container">
-					<div className="row">
-						<div className="col-sm-6 col-md-3">
-							<div className="footer-links">
-								<h4>{__('Wikicare')}</h4>
-								<ul className="foot-links">
-									<li><Link to="/">{__('Home')}</Link></li>
-									<li><Link to="/about-us">{__('About Us')}</Link></li>
-									<li><Link to="/features">{__('Features')}</Link></li>
-									<li><Link to="/article">{__('Article')}</Link></li>
-									<li><Link to="/careers">{__('Careers')}</Link></li>
-									<li><Link to="/login">{__('Login')}</Link></li>
-									<li><Link to="/login?tab=signup">{__('Register')}</Link></li>
-									<li><Link to="#">{__('Contact Us')}</Link></li>
+					<div className="top-footer">
+						<div className="row">
+							<div className="col-sm-3 col-xs-6 col-xxs-12 top-footer-box">
+								<h3>{_('Why Pateast')}</h3>
+								<ul>
+									<li><Link to="#">{_('Testimonials')}</Link></li>
+									<li><Link to='/terms-condition'>{_('Terms & Conditions')}</Link></li>
+									<li><Link to='/privacy-policy'>{_('Privacy Policy')}</Link></li>
+									<li><Link to='/refund-policy'>{_('Refund & Cancellation Policy')}</Link></li>
 								</ul>
 							</div>
-						</div>
-						<div className="col-sm-6 col-md-3">
-							<div className="footer-links">
-								<h4>{__('Wikicare For patients')}</h4>
-								<ul className="foot-links">
-									<li><a href="#">{__('Search Doctors/Clinic & Hospitals')}</a></li>
-									<li><a href="#">{__('Get Appointment')}</a></li>
-									<li><a href="#">{__('Get Medicines')}</a></li>
-									<li><a href="#">{__('Health Articles')}</a></li>
-									<li><a href="#">{__('Wikicare App')}</a></li>
+							<div className="col-sm-3 col-xs-6 col-xxs-12 top-footer-box">
+								<h3>{_('Partner')}</h3>
+								<ul>
+									<li><Link to="/partners">{_('Partner Program')}</Link></li>
 								</ul>
 							</div>
-						</div>
-						<div className="col-sm-6 col-md-3">
-							<div className="footer-links">
-								<h4>{__('Wikicare for Doctors/ Clinics & hospitals')}</h4>
-								<ul className="foot-links">
-									<li><a href="#">{__('Wikicare Profile')}</a></li>
-									<li><Link href="/online-consult">{__('Online Consult')}</Link></li>
-									<li><a href="#">{__('Appointments')}</a></li>
-									<li><a href="#">{__('Health Articles')}</a></li>
-								</ul>
-							</div>
-						</div>
-						<div className="col-sm-6 col-md-3">
-							<div className="footer-links">
-								<h4>{__('Social')}</h4>
-								<ul className="foot-links">
-									<li><a href="#">{__('Facebook')}</a></li>
-									<li><a href="#">{__('Twitter')}</a></li>
-									<li><a href="#">{__('Youtube')}</a></li>
-									<li><a href="#">{__('Linkedin')}</a></li>
+							<div className="col-sm-3 col-xs-6 col-xxs-12 top-footer-box">
+								<h3>{_('Company')}</h3>
+								<ul>
+									<li><IndexLink to="/">{_('Home')}</IndexLink></li>
+									<li><a href="//blog.pateast.co">{_('Blog')}</a></li>
+									<li><Link to="/contact-us">{_('Contact Us')}</Link></li>
+									<li><Link to="/features">{_('Features')}</Link></li>
+									<li><Link to="/faq">{_('FAQ')}</Link></li>
 								</ul>
 							</div>
 						</div>
 					</div>
-					<div className="row text-center">
-						<div className="col-sm-12">
-							<div className="footer-logo"> 
-								<img src='/imgs/home/footer-logo.png' alt="img"/>
+					<div className="bottom-footer">
+						<div className="copy-right-text">
+							{_('Pateast © 2018, All Right Reserved.')}
+						</div>
+						<div className="footer-right-area">
+							<div className="stores-btns">
+								<a href="//itunes.apple.com/us/app/pateast/id1278331221?mt=8" target="_blank">
+									<i className="fab fa-apple"></i>
+									<small>{_('Available on the')}</small>
+									{_('App Store')}
+								</a>
+								<a href="//play.google.com/store/apps/details?id=com.pws.pateast"  target="_blank">
+									<i className="fab fa-google-play"></i>
+									<small>{_('Available on the')}</small>
+									{_('Google Play')}
+								</a>
 							</div>
-							<div className="copyright-link"> 
-								<p>&copy; 2018 - Wikicare. {__('All rights reserved')}.
-									<a href="#">{__('Terms & Conditions')}</a>
-									<Link to="/privacy-policy">{__('Privacy Policy')}</Link>
-								</p>
-							</div>
+							<ul className="follow-icons">
+								<li>
+									<a href="https://www.facebook.com/Pateastco/" target="_blank" className="icon-fb">
+										<i className="fab fa-facebook-f"/>
+									</a>
+								</li>
+								<li>
+									<a href="https://twitter.com/pateastco" target="_blank" className="icon-twitter">
+										<i className="fab fa-twitter"/>
+									</a>
+								</li>
+								<li>
+									<a href="https://www.linkedin.com/company/pateast-co" target="_blank" className="icon-linkedin">
+										<i className="fab fa-linkedin-in"/>
+									</a>
+								</li>
+							</ul>
 						</div>
 					</div>
 				</div>

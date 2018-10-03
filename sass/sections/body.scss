@@ -1,0 +1,41 @@
+#container {
+	> main {
+		position: relative;
+		top: $header-height;
+
+		> #body {
+			padding: ($grid-gutter-width / 2) ($grid-gutter-width / 2) 30px;
+			height: calc(100vh - #{$header-height});
+			overflow-y: auto;
+
+			&.full-height-content {
+				display: flex;
+				flex-direction: column;
+
+				> .view {
+					flex: 1;
+					width: 100%;
+				}
+			}
+
+			@media(min-width: $screen-sm-min) {
+				padding-left: $sidebar-width + $grid-gutter-width / 2;
+			}
+		}
+	}
+
+	> #chat {
+		position: fixed;
+		width: 250px;
+		top: $header-height;
+		right: -250px;
+		bottom: 0;
+		z-index: 1000;
+		background-color: #2B3438;
+		transition: right 100ms linear;
+
+		&.open {
+			right: 0;
+		}
+	}
+}

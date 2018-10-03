@@ -1,41 +1,45 @@
 import React from 'react';
+import url from 'url';
 import {connect} from 'react-redux';
-
-import actions from '../redux/actions';
-import Pagination from '../components/Pagination';
-import Loading from '../components/Loading';
-import Select from '../components/Select';
 
 import makeTranslater from '../translate';
 
-import {makeApiData} from '../api';
-
-import {getStatusLabel} from '../utils';
+import {
+	dialog,
+	getStatusOptions,
+	getStatusTitle,
+	filtersFromQuery,
+	filterValue,
+	queryFromFilters,
+	moduleActions,
+	getInputValue,
+} from '../utils';
 
 import {
+	Grid,
 	Row,
 	Col,
-	Grid,
-	Panel,
-	Table,
-	BPanel,
-	PanelBody,
-	PanelHeader,
-	PanelContainer,
+	Clearfix,
 	Icon,
+	Text,
+	View,
 	Button,
-	Form,
+	DataTable,
 	FormGroup,
 	ControlLabel,
-	InputGroup,
-	FormControl,
-	Checkbox,
 	HelpBlock,
-} from '@sketchpixy/rubix';
+	Select,
+	Checkbox,
+	FormControl,
+	Loading,
+	Pagination,
+	Panel,
+} from '../components';
 
-import url from 'url';
-
-const viewName = 'role';
+import {addView} from '../redux/reducers/views';
+import reducer from '../redux/reducers/role';
+import * as actions from '../redux/actions/role';
+addView('role', reducer);
 
 @connect(state => ({
 	session: state.session,
@@ -43,348 +47,86 @@ const viewName = 'role';
 	loading: state.view.loading || false,
 	translations: state.translations,
 	lang: state.lang,
-	...state.view.role
+	...state.view.state,
 }))
-export default class Role extends React.Component {
-	constructor(props) {
-		super(props);
+export default class Role extends React.Component{
+	static fetchData(store){
+		return store.dispatch(actions.init(store.getState()));
+	}
 
-		this.handleDataUpdate = event => {
-			let value;
-			if (event.target.type === 'checkbox')
-				value = event.target.checked;
-			else
-				value = event.target.value;
-			this.updateData(event.target.name, value);
-		}
+	permissions = moduleActions(this.props.session.modules, 'role');
 
-		this.handleEdit = event => {
-			this.edit(event.target.getAttribute('data-item-id'));
-		};
-
-		this.handleState = event => {
-			this.changeStatus(
-				event.target.getAttribute('data-item-id'),
-				event.target.getAttribute('data-item-status') === '1' ? '0' : '1',
-			)
-		};
-
-		this.updateCheckBox = event => {
-			var modelName = event.target.getAttribute('data-model-name');
-			var modelCheck = event.target.getAttribute('data-model-checked');
-			var rp = [];
-			$('.chk input[data-model-name='+modelName+']').each(function(){
-				if($(this).val() && $(this).is(':checked')) rp.push(parseInt($(this).val()));
+	toggleFilters = () => {
+		if (this.props.filters === null) {
+			this.props.dispatch({
+				type: 'SHOW_FILTERS',
+				filters: filtersFromQuery(this.props.query)
 			});
-			if(modelName == modelCheck) {
-				rp = [];
-				if(event.target.checked) {
-					$('.chk input[data-model-name='+modelName+']').each(function(){
-						if($(this).val()) rp.push(parseInt($(this).val()));
-					});
-				}
-			} else if (event.target.checked && modelCheck !== modelName+'_view') {
-				rp.push(parseInt($('.chk input[data-model-checked='+modelName+'_view]').val()));
-			} else if (modelCheck === modelName+'_view' && !event.target.checked) {
-				rp = [];
-			}
-			this.checkedStatus(modelName, rp);
+		} else {
+			this.props.dispatch({
+				type: 'HIDE_FILTERS',
+			});
 		}
-	}
+	};
 
-	static fetchData(store) {
-		return store.dispatch(
-			actions.role.init(
-				store.getState()
+	updateFilter = event => this.props.dispatch(actions.updateFilter(event));
+
+	search = () => {
+		this.props.dispatch({
+			type: 'SET_QUERY',
+			query: queryFromFilters(this.props.filters),
+		});
+		this.props.router.push(this.props.router.createPath(this.props.router.location.pathname));
+	};
+
+	reset = () => {
+		this.props.dispatch({
+			type: 'SET_QUERY',
+			query: [],
+		});
+		this.props.router.push(this.props.router.createPath(this.props.router.location.pathname));
+	};
+
+	startAdd = () => this.props.dispatch(actions.startAdd(this.props));
+
+	hideDataModal = () => this.props.dispatch(actions.hideDataModal());
+
+	changeStatus = event => {
+		this.props.dispatch(
+			actions.changeStatus(
+				this.props,
+				event.currentTarget.getAttribute('data-item-id'),
+				event.currentTarget.value,
 			)
 		);
-	}
+	};
 
-	render() {
-		if (this.props.loading) return <Loading/>;
-		let content, __ = makeTranslater(
-			this.props.translations,
-			this.props.lang.code
-		);
-		switch(this.props.viewState) {
-			case 'DATA_FORM':
-				content = this.renderAdd(__);
-				break;
-			default:
-				content = this.renderList(__);
-		}
-		return (
-			<Row>
-				<Col xs={12}>
-					<PanelContainer controls={false} className="overflow-visible">
-						<Panel>
-							<PanelHeader className='bg-green'>
-								<Grid>
-									<Row>
-										<Col xs={4} md={10} className='fg-white'>
-											<h3>{__('Role')}</h3>
-										</Col>
-										<Col xs={8} md={2}>
-											<h3>
-												{this.props.viewState === 'LIST' &&
-												<Button
-													inverse
-													outlined
-													style={{marginBottom: 5}}
-													bsStyle='default'
-													onClick={::this.startAddNew}
-												>
-													{__('Add New')}
-												</Button>}
-												{this.props.viewState === 'DATA_FORM' &&
-												<Button
-													inverse
-													outlined
-													style={{marginBottom: 5}}
-													bsStyle='default'
-													onClick={::this.viewList}
-												>
-													{__('View List')}
-												</Button>}
-											</h3>
-										</Col>
-									</Row>
-								</Grid>
-							</PanelHeader>
-							<PanelBody>
-								<Grid>
-									{content}
-								</Grid>
-							</PanelBody>
-						</Panel>
-					</PanelContainer>
-				</Col>
-			</Row>
-		);
-	}
+	remove = event => {
+		let id = event.currentTarget.getAttribute('data-item-id');
+		dialog.confirm({
+			callback: (value => value && this.props.dispatch(actions.remove(this.props, id))),
+			message: window.__('Are you sure you want to delete this Role?'),
+		});
+	};
 
-	renderList(__) {
-		return (
-			<Row key="role-list">
-				<Col xs={12}>
-					<Table condensed striped>
-						<thead>
-							<tr>
-								<th>{__('S No.')}</th>
-								<th>{__('Name')}</th>
-								<th>{__('Status')}</th>
-								<th>{__('Actions')}</th>
-							</tr>
-							<tr>
-								<td></td>
-								<td>
-									<FormControl
-										type='text'
-										onChange={this.makeFilter('roledetail__name')}
-										value={this.props.filter.roledetail__name || ''}
-										placeholder={__('Name') }
-									/>
-								</td>
-								<td>
-									<FormControl
-										componentClass="select"
-										placeholder="select"
-										onChange={this.makeFilter('role__is_active')}
-										value={this.props.filter.role__is_active || ''}
-									>
-										<option value=''>{__('All')}</option>
-										<option value='1'>{__('Active')}</option>
-										<option value='0'>{__('Inactive')}</option>
-									</FormControl>
-								</td>
-								<td>
-									<Icon
-										className={'fg-darkcyan'}
-										style={{fontSize: 20}}
-										glyph={'icon-feather-search'}
-										onClick={::this.search}
-									/>
-									<Icon
-										className={'fg-brown'}
-										style={{fontSize: 20}}
-										glyph={'icon-feather-reload'}
-										onClick={::this.reset}
-									/>
-								</td>
-							</tr>
-						</thead>
-						<tbody>
-						{this.props.items.map(this.getDataRow, this)}
-						{this.props.items.length === 0 && this.getNoDataRow(__)}
-						</tbody>
-					</Table>
-				</Col>
-				<Col xs={12}>
-					<Pagination
-						data={this.props.pageInfo}
-						onSelect={::this.changePage}
-					/>
-				</Col>
-			</Row>
-		);
-	}
+	updateData = event => {
+		this.props.dispatch(actions.update(
+			'UPDATE_DATA_VALUE',
+			event.currentTarget.name,
+			getInputValue(event.currentTarget),
+		));
+	};
 
-	renderAdd(__) {
-		return (
-			<Row>
-				<Col xs={12}>
-					<Form>
-						<Row>
-							<Col xs={6}>
-								<FormGroup
-									controlId='name'
-									validationState={this.props.errors.name ? 'error': null}
-								>
-									<ControlLabel>{__('Name')}</ControlLabel>
-									<FormControl
-										type='text'
-										placeholder={__('Name')}
-										value={this.props.item.name}
-										name='name'
-										onChange={this.handleDataUpdate}
-									/>
-									<HelpBlock>{this.props.errors.name}</HelpBlock>
-								</FormGroup>
-								<FormGroup controlId='is_active'>
-									<Checkbox
-										name='is_active'
-										onChange={this.handleDataUpdate}
-										checked={this.props.item.is_active}
-										>
-										{__('Active')}
-									</Checkbox>
-								</FormGroup>
-							</Col>
-						</Row>
-						<BPanel header={__('Permissions')}>
-							<Row>
-								<Col xs={12}>
-									<FormGroup>
-										<Row>
-											{this.props.helperData.permissions.map((item, key) => {
-												return (
-													<Col key={key} xs={3} className="permission-box">
-														<div>
-															<Checkbox 
-																name=''
-																defaultValue=''
-																data-model-name={item.model}
-																data-model-checked={item.model}
-																onChange={this.updateCheckBox}
-																className="chk"
-																checked={!!this.props.item.rolepermissions[item.model] && this.props.item.rolepermissions[item.model].length !== 0}
-															>
-																{__(item.model)}
-															</Checkbox>
-															<ul className="list-unstyled">
-																{item[item.model].map((item2, key2) => {
-																	return (
-																		<li key={key2}>
-																			<Checkbox
-																				name='permissionIds[]'
-																				defaultValue={item2.id}
-																				data-model-name={item.model}
-																				data-model-checked={item.model+'_'+item2.action}
-																				onChange={this.updateCheckBox}
-																				className="chk"
-																				checked={!!this.props.item.rolepermissions[item.model] && this.props.item.rolepermissions[item.model].indexOf(item2.id) !== -1}
-																			>
-																				{__(item2.action)}
-																			</Checkbox>
-																		</li>
-																	);
-																})}
-															</ul>
-														</div>
-													</Col>
-												);	
-											})}
-										</Row>
-									</FormGroup>
-								</Col>
-							</Row>
-						</BPanel>
-					</Form>
-					<Row>
-						<Col xs={12}>
-							<div>
-								<Button
-									outlined
-									bsStyle='lightgreen'
-									onClick={::this.viewList}>
-									{__('Cancel')}
-								</Button>{' '}
-								<Button
-									outlined
-									bsStyle='lightgreen'
-									onClick={::this.save}>
-									{__('Submit')}
-								</Button>
-							</div>
-							<br/>
-						</Col>
-					</Row>
-				</Col>
-			</Row>
+	edit = event => this.props.dispatch(
+		actions.edit(
+			this.props,
+			parseInt(event.currentTarget.getAttribute('data-item-id'))
 		)
-	}
+	);
 
-	getDataRow(item, index) {
-		let __ = makeTranslater(
-			this.props.translations,
-			this.props.lang.code
-		);
-		return (
-			<tr key={item.id}>
-				<td>{index+1}</td>
-				<td>{item.roledetails[0].name}</td>
-				<td>{__(getStatusLabel(item.is_active, __))}</td>
-				<td>
-					<Icon
-						className={'fg-brown'}
-						style={{fontSize: 20}}
-						glyph={'icon-simple-line-icons-note'}
-						onClick={this.handleEdit}
-						data-item-id={item.id}
-					/>
-					<Icon
-						className={item.is_active === 1 ? 'fg-deepred': 'fg-darkgreen'}
-						style={{fontSize: 20}}
-						glyph={this.getStatusIcon(item.is_active)}
-						onClick={this.handleState}
-						data-item-id={item.id}
-						data-item-status={item.is_active}
-					/>
-				</td>
-			</tr>
-		)
-	}
+	save = () => this.props.dispatch(actions.save(this.props));
 
-	getStatusIcon(status) {
-		switch(status) {
-			case 0:
-				return 'icon-simple-line-icons-check';
-			case 1:
-				return 'icon-simple-line-icons-close';
-			case -1:
-				return 'icon-fontello-spin4';
-		}
-	}
-
-	getNoDataRow(__) {
-		return (
-			<tr key={0}>
-				<td colSpan={7}>{__('No data found')}</td>
-			</tr>
-		)
-	}
-
-	changePage(page) {
+	changePage = page => {
 		this.props.router.push(
 			url.format({
 				pathname: this.props.location.pathname,
@@ -394,64 +136,292 @@ export default class Role extends React.Component {
 				}
 			})
 		);
-	}
+	};
 
-	makeFilter(name) {
-		let dispatch = this.props.dispatch;
-		return event => {
-			dispatch({
-				type: 'UPDATE_FILTER',
-				name,
-				value: event.target.value
-			});
-		}
-	}
-
-	updateData(name, value) {
-		this.props.dispatch(actions.role.updateData(name, value));
-	}
-
-	checkedStatus(model, permissions){
-		this.props.dispatch(actions.role.checkedStatus(model, permissions));
-	}
-
-	search() {
-		this.props.router.push('/admin/role');
-	}
-
-	reset() {
+	updateModuleFilter = event => {
+		let filter = getInputValue(event.currentTarget).toLowerCase();
 		this.props.dispatch({
-			type: 'RESET_FILTERS'
+			type: 'UPDATE_ROLE_MODULE_FITLER',
+			permissions: this.props.meta.permissions.map(permission => {
+				permission.hidden = window.__(permission.model).toLowerCase().indexOf(filter) === -1;
+				return permission;
+			}),
+			value: getInputValue(event.currentTarget),
 		});
-		this.props.router.push('/admin/role');
-	}
+	};
 
-	startAddNew() {
-		this.props.dispatch(actions.role.startAdd(this.props));
-	}
+	render() {
+		if (this.props.loading) return <Loading/>;
+		let __ = makeTranslater(this.props.translations, this.props.lang.code);
+		if (this.props.item === false)
+			return (
+				<View
+					search={this.props.query}
+					filters={this.renderFilters(__)}
+					actions={this.renderViewActions(__)}>
+					{this.renderData(__)}
+				</View>
+			);
 
-	viewList() {
-		this.props.dispatch(actions.role.viewList())
-	}
-
-	edit(itemId) {
-		this.props.dispatch(actions.role.edit(this.props, itemId));
-	}
-
-	save() {
-		this.props.dispatch(
-			actions.role.save(this.props, this.props.session.id)
+		let visiblePermissions = 0;
+		return (
+			<View actions={
+				<View.Actions>
+					<View.Action onClick={this.reset} title={__('View List')}>
+						<Text>View List</Text>
+					</View.Action>
+				</View.Actions>
+			}>
+				{
+					this.props.item === null ? <Loading/> : 
+					<React.Fragment>
+						<Row>
+							<Col md={6}>
+								<FormGroup
+									controlId='name'
+									validationState={this.props.errors.name ? 'error': null}>
+									<ControlLabel><Text>Name</Text></ControlLabel>
+									<FormControl
+										autoFocus
+										name='name'
+										type='text'
+										placeholder={__('Name')}
+										value={this.props.item.name}
+										onChange={this.updateData}/>
+									<HelpBlock>{this.props.errors.name}</HelpBlock>
+								</FormGroup>
+							</Col>
+						</Row>
+						<Row>
+							<Col md={6}>
+								<Checkbox
+									name='is_active'
+									onChange={this.updateData}
+									value={this.props.item.is_active}>
+									<ControlLabel><Text>Status</Text></ControlLabel>
+								</Checkbox>
+							</Col>
+						</Row>
+						<Panel>
+							<Panel.Heading>
+								<Panel.Title><Text>Permission</Text></Panel.Title>
+							</Panel.Heading>
+							<Panel.Body>
+								<React.Fragment>
+									<Row>
+										<Col mdOffset={3} md={6}>
+											<FormGroup>
+												<ControlLabel><Text>Search</Text></ControlLabel>
+												<FormControl
+													onChange={this.updateModuleFilter}
+													value={this.props.item.query}/>
+											</FormGroup>
+										</Col>
+									</Row>
+									<Row>
+										{
+											this.props.meta.permissions.map(
+												permission =>
+													!permission.hidden &&
+													<React.Fragment key={permission.model}>
+														<PermissionBox
+															{...permission}
+															value={this.props.item.permissionIds}
+															dispatch={this.props.dispatch}/>
+														{visiblePermissions++ % 4 === 3 && <Clearfix/>}
+													</React.Fragment>
+											)
+										}
+									</Row>
+								</React.Fragment>
+							</Panel.Body>
+						</Panel>
+						<Button onClick={this.hideDataModal}>
+							<Text>Cancel</Text>
+						</Button>
+						{' '}
+						<Button
+							onClick={this.save}
+							bsStyle='primary'>
+							<Text>Submit</Text>
+						</Button>
+					</React.Fragment>
+				}
+			</View>
 		);
 	}
 
-	changeStatus(itemId, status) {
-		this.props.dispatch(
-			actions.role.changeStatus(
-				this.props,
-				itemId,
-				status
-			)
-		)
+	renderData(__) {
+		return (
+			<React.Fragment>
+				<DataTable>
+					<thead>
+						<tr>
+							<td className='tw-8'>
+								<Text>Status</Text>
+							</td>
+							<td>
+								<Text>Name</Text>
+							</td>
+							<td>
+								<DataTable.ActionColumnHeading/>
+							</td>
+						</tr>
+					</thead>
+					<tbody>
+						{this.renderDataRows(__)}
+					</tbody>
+				</DataTable>
+				<Pagination data={this.props.pageInfo} onSelect={this.changePage}/>
+			</React.Fragment>
+		);
+	}
+
+	renderViewActions(__) {
+		return (
+			<View.Actions>
+				{
+					this.permissions.add &&
+					<View.Action onClick={this.startAdd}>
+						<Text>Add New</Text>
+					</View.Action>
+				}
+				<View.Action onClick={this.toggleFilters} title={__('Filters')}>
+					<Icon glyph='fa-filter'/>
+				</View.Action>
+				<View.Action onClick={this.reset} title={__('Reset')}>
+					<Icon glyph='fa-redo-alt'/>
+				</View.Action>
+			</View.Actions>
+		);
+	}
+
+	renderDataRows(__) {
+		if (this.props.items.length === 0) {
+			return <DataTable.NoDataRow colSpan={3}/>;
+		}
+
+		return this.props.items.map(item => (
+			<tr key={item.id}>
+				<td className='tw-8'>
+					<Checkbox
+						inline
+						title={getStatusTitle(item.is_active, __)}
+						onChange={this.changeStatus}
+						data-item-id={item.id}
+						data-item-status={item.is_active}
+						disabled={!this.permissions.status}
+						value={item.is_active}/>
+				</td>
+				<td>{item.roledetails[0].name}</td>
+				<td>
+					<DataTable.Actions id={'item-actions-' + item.id}>
+						{
+							this.permissions.edit &&
+							<DataTable.Action
+								text='Edit'
+								glyph='fa-edit'
+								onClick={this.edit}
+								data-item-id={item.id}/>
+						}
+						{
+							this.permissions.delete &&
+							<DataTable.Action
+								text='Remove'
+								glyph='fa-trash'
+								onClick={this.remove}
+								data-item-id={item.id}/>
+						}
+					</DataTable.Actions>
+				</td>
+			</tr>
+		));
+	}
+
+	renderFilters(__) {
+		const filters = this.props.filters;
+		if (filters === null) return false;
+		return (
+			<View.Filters search={this.search} remove={this.toggleFilters}>
+				<FormControl
+					type='text'
+					title={__('Name')}
+					placeholder={__('Name')}
+					name='roledetail__name'
+					onChange={this.updateFilter}
+					value={filterValue(filters, 'roledetail__name', '')} />
+				<Select
+					title={__('Status')}
+					placeholder={__('Select Status')}
+					name='role__is_active'
+					onChange={this.updateFilter}
+					value={filterValue(filters, 'role__is_active', null)}
+					options={getStatusOptions(__)}/>
+			</View.Filters>
+		);
 	}
 }
 
+class PermissionBox extends React.Component {
+
+	toggleAll = () => this.props.dispatch({
+		type: this.any() ? 'REMOVE_ROLE_PERMISSION' : 'ADD_ROLE_PERMISSION',
+		ids: this.props.permissions.map(permission => permission.id)
+	});
+
+	toggleOne = event => {
+		let permission = this.props.permissions[parseInt(event.target.getAttribute('data-index'))];
+		if (this.props.value[permission.id]) {
+			this.props.dispatch({
+				type: 'REMOVE_ROLE_PERMISSION',
+				ids: permission.action !== 'view' ? [permission.id] :
+					this.props.permissions.map(permission => permission.id)
+			});
+		} else {
+			this.props.dispatch({
+				type: 'ADD_ROLE_PERMISSION',
+				ids: [permission.id, this.viewPermissionId()],
+			});
+		}
+	};
+
+	render () {
+		let {model, permissions, value} = this.props;
+
+		return (
+			<Col className='permission-box' md={3}>
+				<Grid fluid>
+					<Row key={0}>
+						<Col xs={2}>
+							<input type='checkbox' checked={this.any()} onChange={this.toggleAll}/>
+						</Col>
+						<Col xs={10}><Text>{model}</Text></Col>
+					</Row>
+					{
+						permissions.map((permission, index) =>
+							<Row key={permission.id}>
+								<Col xs={2}>
+									<input
+										type='checkbox'
+										data-index={index}
+										onChange={this.toggleOne}
+										checked={value[permission.id] !== undefined}/>
+								</Col>
+								<Col xs={10}><Text>{permission.action}</Text></Col>
+							</Row>
+						)
+					}
+				</Grid>
+			</Col>
+		);
+	}
+
+	any() {
+		return this.props.permissions.some(({id}) => this.props.value[id] !== undefined);
+	}
+
+	viewPermissionId() {
+		let permission = this.props.permissions.find(({action}) => action === 'view');
+		return permission && permission.id;
+	}
+}

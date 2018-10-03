@@ -1,34 +1,17 @@
 import React from 'react';
+import {connect} from 'react-redux';
+import makeTranslater from '../translate';
 
-import {
-	Row,
-	Col,
-	Grid,
-} from '@sketchpixy/rubix';
+const Footer = ({lang, translations}) => {
+	let __ = makeTranslater(translations, lang.code);
+	return (
+		<footer id='footer'>
+			{__('Copyright © {{year}} Pateast', {year: new Date().getFullYear()})}
+		</footer>
+	);
+};
 
-export default class Footer extends React.Component {
-	state = {
-		version: 0
-	};
-
-	componentDidMount() {
-		this.setState({
-			version: document.body.getAttribute('data-version')
-		});
-	}
-
-	render() {
-		var year = new Date().getFullYear();
-		return (
-			<div id='footer-container'>
-				<Grid id='footer' className='text-center'>
-					<Row>
-						<Col xs={12}>
-							<div>© {year} Wikicare</div>
-						</Col>
-					</Row>
-				</Grid>
-			</div>
-		);
-	}
-}
+export default (connect(state => ({
+	lang: state.lang,
+	translations: state.translations,
+}))(Footer))

@@ -1,71 +1,70 @@
 import {combineReducers} from 'redux';
+import {query, filters, pageInfo} from './common';
 
-function viewState(state = null, action) {
-  switch(action.type) {
-    case 'INIT_MODULE':
-      return 'LIST';
-    default:
-      return state;
-  } 
+function items(state = [], action) {
+	switch(action.type) {
+		case 'INIT_MODULE':
+			return action.data.data;
+		case 'CHANGE_ITEM_STATUS':
+			var itemId = parseInt(action.itemId);
+			return state.map(academicsession => {
+				if (academicsession.id === itemId)
+					academicsession.is_active = parseInt(action.status);
+				return academicsession;
+			});
+		default:
+			return state;
+	}
 }
 
-function academicsession(state = null, action) {
-  switch(action.type) {
-    case 'INIT_MODULE':
-      return action.data.data;
-    default:
-      return state;
-  }
+function errors(state = {}, action) {
+	switch(action.type) {
+		case 'INIT_MODULE':
+		case 'START_ADD_ACADEMICSESSION':
+		case 'SET_ACADEMICSESSION_EDIT_DATA':
+			return {};
+		case 'SET_ERRORS_ACADEMICSESSION':
+			return action.errors;
+		default:
+			return state;
+	}
 }
 
-function errors(state = null, action) {
-  switch(action.type) {
-    case 'INIT_MODULE':
-      return {};
-    default:
-      return state;
-  }
-}
-
-function pageInfo(state = null, action) {
-  switch(action.type) {
-    case 'INIT_MODULE':
-      return {
-        totalData: action.data.totalData,
-        pageCount: action.data.pageCount,
-        pageLimit: action.data.pageLimit,
-        currentPage: action.data.currentPage
-      };
-    default:
-      return state;
-  }
-}
-
-function filter(state = null, action) {
-  switch(action.type) {
-    case 'INIT_MODULE':
-      return state || {};
-    case 'RESET_FILTERS':
-      return {};
-    case 'UPDATE_FILTER':
-      var newState = {...state};
-      if (action.value) {
-        newState[action.name] = action.value;
-      } else {
-        delete newState[action.name];
-      }
-      return newState;
-    default:
-      return state;
-  }
+function item(state = false, action) {
+	switch(action.type) {
+		case 'INIT_MODULE':
+			return false;
+		case 'HIDE_DATA_MODAL':
+			return false;
+		case 'START_ADD_ACADEMICSESSION':
+			return {
+				name: '',
+				start_date: '',
+				end_date: '',
+				is_active: 1,
+			};
+		case 'SET_ACADEMICSESSION_EDIT_DATA':
+			return action.data;
+		case 'START_ACADEMICSESSION_EDIT':
+			return null;
+		case 'UPDATE_DATA_VALUE':
+			return {
+				...state,
+				[action.name]: action.value,
+			};
+		default:
+			return state;
+	}
 }
 
 const reducer = combineReducers({
-  viewState,
-  academicsession,
-  errors,
-  pageInfo,
-  filter
+	errors,
+	items,
+	item,
+	
+	pageInfo,
+	filters,
+	query,
 });
 
 export default reducer;

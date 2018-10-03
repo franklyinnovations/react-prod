@@ -1,169 +1,176 @@
-var path = require('path');
-var rtlcss = require('rtlcss');
-var webpack = require('webpack');
-var deepmerge = require('deepmerge');
-var autoprefixer = require('autoprefixer');
-var webpackCommonConfig = require('./webpack.common');
-var ExtractTextPlugin = require("extract-text-webpack-plugin");
+'use strict';
 
-var isProduction = process.env.NODE_ENV === 'production';
+const
+	path = require('path'),
+	rtlcss = require('rtlcss'),
+	autoprefixer = require('autoprefixer'),
+	MiniCssExtractPlugin = require('mini-css-extract-plugin'),
+	BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin,
+	config = require('../api/config');
 
-var sourceMap = false;
+const production = process.env.NODE_ENV === 'production',
+	wdsPath = (config.ssl_options ? 'https://' : 'http://') + config.host + ':' + config.wp_port,
+	publicPath = `${wdsPath}/assets/`;
 
-var config = require('../api/config');
-
-if (process.env.SOURCEMAP === 'true') {
-  sourceMap = true;
-}
-
-var wds = {
-  hostname: config.host,
-  port: config.wp_port,
+const entry = {
+	app: ['./src/main.js'],
+	main: ['./sass/main.scss'],
+	'main-rtl': ['./sass/main.rtl.scss'],
+	plugins: ['./src/plugins.js']
 };
 
-var wdsPath = (config.ssl_options ? "https://" : "http://") + wds.hostname + ":" + wds.port;
-var publicPath = wdsPath + "/assets/";
+const plugins = [
 
-var devtool = '';
-var entry = {
-  'app': ['./src/main.js'],
-  'main': ['./sass/main.scss'],
-  'main-rtl': ['./sass/main.rtl.scss'],
-  'plugins': ['./src/plugins.js']
-};
-
-var plugins = [
-  new webpack.DefinePlugin({__CLIENT__: true, __SERVER__: false, __PRODUCTION__: isProduction, __DEV__: !isProduction, "process.env.NODE_ENV": '"'+process.env.NODE_ENV+'"', __DEVTOOLS__: true}),
-  new webpack.IgnorePlugin(/vertx/)
 ];
 
-if (process.env.EXTRACT_TEXT_PLUGIN === 'true') {
-  plugins.unshift(new ExtractTextPlugin('css/[name].css'));
+if (config.analyze) {
+	plugins.push(new BundleAnalyzerPlugin());
 }
 
-if (isProduction) {
-  plugins.unshift(new webpack.optimize.OccurrenceOrderPlugin());
-  plugins.unshift(new webpack.optimize.DedupePlugin());
-  plugins.unshift(new webpack.optimize.UglifyJsPlugin({
-    mangle: false,
-    compress: {
-      unused: false,
-      warnings: false
-    },
-    sourceMap: sourceMap
-  }));
-} else {
-  plugins.unshift(new webpack.HotModuleReplacementPlugin());
+if (production) {
+	plugins.unshift(new MiniCssExtractPlugin({
+		filename: 'css/[name].css',
+	}));
 }
 
-function getStyleLoader(prefixer) {
-  var s = '';
+const rules = [
+	{
+		test: /\.js$/,
+		use: [
+			'cache-loader',
+			{
+				loader: 'babel-loader',
+				options: {
+					presets: [
+						[
+							'env',
+							{
+								loose: true,
+							}
+						],
+						'react',
+						'stage-0',
+					],
+					plugins: [
+						'react-hot-loader/babel',
+						'transform-export-extensions',
+						'transform-decorators-legacy',
+						'transform-runtime',
+					],
+					compact: true,
+				}
+			}
+		],
+		exclude: /node_modules|bower_components/,
+	},
+	{
+		test: /main\.scss$/,
+		use: getStyleLoader('ltr', true),
+	},
+	{
+		test: /main\.rtl\.scss$/,
+		use: getStyleLoader('rtl', true),
+	},
+	{
+		test: /\.css$/,
+		issuer: path.resolve(__dirname, '../sass/main.scss'),
+		use: getStyleLoader('ltr', false),
+	},
+	{
+		test: /\.css$/,
+		issuer: path.resolve(__dirname, '../sass/main.rtl.scss'),
+		use: getStyleLoader('rtl', false),
+	},
+	{
+		test: /\.(woff|woff2|ttf|eot|svg)$/,
+		loader: 'file-loader',
+		options: {
+			name: './assets/[hash].[ext]',
+		}
+	},
+	{
+		issuer: path.resolve(__dirname, '../src/plugins.js'),
+		use: ['cache-loader', 'script-loader']
+	},
+];
 
-  if (sourceMap) s = 'sourceMap';
+function getStyleLoader(dir, useSass) {
+	let result = [
+		{
+			loader: production ? MiniCssExtractPlugin.loader : 'style-loader'
+		},
+		'cache-loader',
+		{
+			loader: 'css-loader'
+		}	
+	];
 
-  if (process.env.EXTRACT_TEXT_PLUGIN === 'false') {
-    return [
-      'style',
-      'css?-minimize&importLoaders=1&root=../public&' + s,
-      'postcss-loader?pack='+prefixer+'!sass?' + s
-    ];
-  }
+	if (dir === 'rtl') {
+		result.push({
+			loader: 'postcss-loader',
+			options: {
+				plugins: [
+					rtlcss,
+				]
+			}
+		});
+	} else {
+		result.push({
+			loader: 'postcss-loader',
+			options: {
+				plugins: [
 
-  return [
-    ExtractTextPlugin.loader({
-      extract: true,
-      omit: 1
-    }),
-    'style',
-    'css?-minimize&importLoaders=1&' + s,
-    'postcss-loader?pack='+prefixer+'&' + s,
-    'sass?' + s
-  ];
+				]
+			}
+		});
+	}
+
+	if (production) {
+		result[result.length - 1].options.plugins.unshift(
+			autoprefixer({ browsers: ['last 2 versions', '> 1%', 'ie 9'] })
+		);
+	}
+	if (useSass) {
+		result.push({loader: 'sass-loader'});
+	}
+	return result;
 }
 
-devtool = sourceMap ? 'source-map' : '';
-
-if (!isProduction) {
-  for (var key in entry) {
-    if (entry.hasOwnProperty(key)) {
-      entry[key].push("webpack/hot/only-dev-server");
-    }
-  }
-
-  entry.app.unshift("react-hot-loader/patch");
-
-  entry.devServerClient = "webpack-dev-server/client?" + wdsPath;
-}
-
-var ltrloaders = getStyleLoader('normalprefixer');
-var rtlloaders = getStyleLoader('rtlprefixer');
-
-if (process.env.RTL !== 'true') {
-  rtlloaders = ['null-loader'];
-}
-
-var loaders = webpackCommonConfig.module.loaders.concat();
-// ltr/rtl loaders
-loaders.push({ test: function(absPath) {
-  if (absPath.search('rtl.scss') !== -1) {
-    return true;
-  }
-  return false;
-}, loaders: rtlloaders });
-loaders.push({ test: function(absPath) {
-  if (absPath.search('rtl.scss') === -1
-   && absPath.search('.scss') !== -1) {
-    return true;
-  }
-  return false;
-}, loaders: ltrloaders });
-
-// script loader for plugins.js
-var pluginLoaders = ['script'];
-if (isProduction) {
-  pluginLoaders.push('uglify');
-}
-loaders.push({
-  test: /(\/|\\)public(\/|\\)(.*?)\.js$/,
-  loaders: pluginLoaders
-});
-
-delete webpackCommonConfig.module;
-
-module.exports = deepmerge({
-  cache: true,
-  debug: true,
-  devtool: devtool,
-  entry: entry,
-  module: {
-    loaders: loaders
-  },
-  postcss: function() {
-    return {
-      normalprefixer: [ autoprefixer({ browsers: ['last 2 versions', '> 1%', 'ie 9'] }) ],
-      rtlprefixer: [ autoprefixer({ browsers: ['last 2 versions', '> 1%', 'ie 9'] }), rtlcss ]
-    };
-  },
-  devServer: {
-    contentBase: wdsPath,
-    publicPath: publicPath,
-    hot:        true,
-    inline:     false,
-    lazy:       false,
-    quiet:      true,
-    noInfo:     true,
-    headers:    { "Access-Control-Allow-Origin": "*" },
-    stats:      { colors: true },
-    host:       wds.hostname,
-    port:       wds.port,
-    https: config.ssl_options,
-  },
-  output: {
-    path: path.join(process.cwd(), 'public'),
-    publicPath: isProduction ? '/' : publicPath,
-    chunkFilename: 'js/[name].js',
-    filename: 'js/[name].js',
-  },
-  plugins: plugins,
-  node: {fs: 'empty'},
-}, webpackCommonConfig);
+module.exports = {
+	devServer: {
+		publicPath,
+		contentBase: path.join(__dirname, '../public'),
+		headers: {'Access-Control-Allow-Origin': '*' },
+		stats: { colors: true },
+		host: config.host,
+		port: config.wp_port,
+		https: config.ssl_options,
+		noInfo: true,
+		overlay: true,
+	},
+	devtool: config.sourcemap,
+	entry,
+	module: {
+		rules,
+	},
+	plugins,
+	node: {fs: 'empty'},
+	output: {
+		path: path.join(__dirname, '../public'),
+		publicPath: production ? '/' : publicPath,
+		chunkFilename: 'js/dist/[chunkhash].js',
+		filename: 'js/dist/[name].js',
+	},
+	context: path.dirname(__dirname),
+	mode: process.env.NODE_ENV,
+	resolve: {
+		modules: [
+			'public',
+			'node_modules'
+		]
+	},
+	externals: {
+		jquery: '$',
+		moment: 'moment',
+	}
+};

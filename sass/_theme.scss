@@ -1,4 +1,232 @@
-/* ADD/REMOVE/CHANGE THEMES HERE */
+@import 'sections';
 
-// Giving the default theme a name
-@include theme-maker("default", ());
+.view {
+	padding-top: $grid-gutter-width / 2;
+	padding-bottom: $grid-gutter-width / 2;
+	background-color: white;
+
+	.view-actions {
+		text-align: right;
+
+		> .row > div:first-child {
+			text-align: left;
+		}
+
+		button {
+			margin-left: 0.5em;
+		}
+
+		margin-bottom: $form-group-margin-bottom;
+	}
+
+	.filters {
+		> .row > div {
+			margin-bottom: $form-group-margin-bottom;
+		}
+		
+		button {
+			margin-right: 0.5em;
+		}
+	}
+
+	.data-table {
+		display: block;
+
+		> thead > tr, > tbody > tr {
+			> td:last-child, > th:last-child {
+				text-align: right;
+			}
+		}
+		
+		> thead {
+			background-color: $brand-primary;
+			color: #fff;
+			display: block;
+			width: 100%;
+		}
+
+		> tbody {
+			display: block;
+			width: 100%;
+			max-height: calc(100vh - 300px);
+			overflow-y: auto;
+			padding-bottom: 100px;
+		}
+
+		tr {
+			width: 100%;
+			display: table;
+			table-layout: fixed;
+		}
+
+		td, th {
+			word-wrap: break-word;
+		}
+
+
+		.table-actions {
+
+			.btn-sm {
+				font-size: 14px;
+			}
+
+			> ul {
+				> li {
+					min-width: 120px;
+				}
+				@include box-shadow(0 6px 12px rgba(0,0,0,.175));
+
+				i {
+					margin-right: 0.5em;
+				}
+			}
+		}
+
+		.action-column-heading {
+			margin-right: 0.5em;
+		}
+	}
+
+	.click-btn {
+		display: flex;
+		align-items: flex-end;
+		justify-content: center;
+		margin: 2em 0 5em;
+
+		> div {
+			position: relative;
+
+			> button {
+				padding: 22px 45px;
+				> i {
+					padding-right: 12px;
+				}
+			}
+
+			> div {
+				position: absolute;
+				bottom: 0;
+			}
+		}
+
+
+		&.left {
+			> div > div {
+				text-align: right;
+				margin-right: $grid-gutter-width;
+				right: 100%;
+			}
+		}
+
+		&.right {
+			> div > div {
+				text-align: left;
+				margin-left: $grid-gutter-width;
+				left: 100%;
+			}
+
+			img {
+				transform: scaleX(-1);
+			}
+		}
+	}
+}
+
+td > .form-group, th > .form-group {
+	margin-bottom: 0;
+}
+
+.align-top {
+	vertical-align: top !important;
+}
+
+.pagination-container {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.checkbox.custom {
+	user-select: none;
+}
+
+.checkbox-inline.custom {
+	padding-left: 0;
+	user-select: none;
+}
+
+.checkbox.custom label{
+	padding-left: 10px;
+}
+
+.checkbox-inline.custom label {
+	padding-left: 5px;
+}
+
+.checkbox.custom.read-only, .checkbox-inline.custom.read-only{
+	cursor: not-allowed;
+	> i {
+		cursor: not-allowed;
+	}
+}
+
+.fas, .far {
+	cursor: pointer;
+}
+
+.timepicker {
+	display: flex;
+	justify-content: space-between;
+	> select {
+		flex: 1;
+
+		&:not(:first-child) {
+			border-left: none;
+		}
+	}
+}
+
+.text-left {
+	text-align: left !important;
+}
+
+.card {
+	padding: $grid-gutter-width / 2;
+	border: 1px solid $table-border-color;
+	margin-bottom: $grid-gutter-width / 2;
+	box-shadow:0 10px 10px -6px #777;
+	&:before, &:after {
+		content: " ";
+		display: table;
+		clear: both;
+	}
+}
+
+.inline {
+	display: inline !important;
+}
+
+.thumbnail-container {
+	@include clearfix;
+	margin-right: -$grid-gutter-width / 2;
+
+	> div {
+		float: left;
+		padding: $grid-gutter-width / 2;
+		border: 1px solid $table-border-color;
+		margin-right: $grid-gutter-width / 2;
+		margin-bottom: $grid-gutter-width / 2;
+	}
+}
+
+.relative {
+	position: relative;
+}
+
+.collapse-left {
+	padding-left: 0;
+}
+
+.collapse-right {
+	padding-right: 0;
+}

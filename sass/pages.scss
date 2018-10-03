@@ -1,0 +1,101 @@
+@import 'pages/front';
+@import 'pages/dashboard';
+@import 'pages/bcsmap';
+@import 'pages/role';
+@import 'pages/transportroute';
+@import 'pages/attendance';
+@import 'pages/feeds';
+
+/** vehicle tracking */
+#vehicletracking-map {
+	height: 100%;
+}
+
+.parent-vehicle-qr-code {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	> div {
+		flex: 1;
+		text-align: center;
+		align-self: flex-end;
+		position: absolute;
+
+		> button {
+			margin-left: 15px;
+		}
+	}
+}
+
+/*marksheet builder*/
+#marksheet-builder {
+	display: flex;
+
+	> iframe {
+		flex: 5;
+		border: 2px solid #ddd;
+		height: calc(100vh - 250px);
+		overflow-y: auto;
+	}
+
+	> div {
+		flex: 2;
+		padding-right: 15px;
+		height: calc(100vh - 250px);
+		overflow-y: auto;
+	}
+}
+
+.que-options {
+	list-style-type: upper-alpha;
+}
+
+.teacher-dashboard {
+	padding: 0;
+	background-color: $body-bg;
+	.card {
+		height: 320px;
+		overflow-y: auto;
+		background-color: white;
+
+		> .card-heading {
+			font-size: 1.25em;
+			margin-bottom: 0.5em;
+			color: $brand-primary;
+		}
+	}
+}
+
+.todo-item {
+	position: relative;
+	width: 250px;
+
+	> div:first-child {
+		height: 2 * $line-height-computed;
+	}
+
+	> p {
+		position: absolute;
+		z-index: 10;
+		top: 0;
+		left: 0;
+		width: 100%;
+		margin: 0;
+		opacity: 0;
+		color: white;
+		background-color: $brand-primary;
+		box-shadow: 2px 2px 20px 0px #ddd;
+		padding: $grid-gutter-width / 2;
+	}
+
+	&:hover {
+		> p {
+			top: 90%;
+			opacity: 1;
+			display: block;
+			transition: opacity 300ms linear;
+		}
+	}
+
+}

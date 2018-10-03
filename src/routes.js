@@ -1,326 +1,340 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
-import classNames from 'classnames';
-import { IndexRoute, Route } from 'react-router';
-
-import { Grid, Row, Col, MainContainer } from '@sketchpixy/rubix';
-import DisplayError from './routes/DisplayError';
-
-import Footer from './panel/Footer';
-import Header from './panel/Header';
-import Sidebar from './panel/Sidebar';
-
-import Adminloginfooter from './adminlogin/Footer';
-import Adminloginheader from './adminlogin/Header';
-
-import Account from './routes/Account';
-
-import Home from './routes/Home';
-import AboutUs from './routes/AboutUs';
-import Feature from './routes/Feature';
-import FrontArticle from './routes/FrontArticle';
-import FrontPage from './routes/Front';
-import Careers from './routes/Careers';
-import CareerDetail from './routes/CareerDetail';
-import CareerApply from './routes/CareerApply';
-import Adminloginpage from './routes/Adminlogin';
-import Signup from './routes/Signup';
-import Dashboard from './routes/Dashboard';
-import Section from './routes/Section';
-import Role from './routes/Role';
-import Tag from './routes/Tag';
-import Country from './routes/Country';
-
-import State from './routes/State';
-import City from './routes/City';
-import Hospital from './routes/Hospital';
-import Patient from './routes/Patient';
-import Doctor from './routes/Doctor';
-
-import FrontDoctorProfile from './routes/Doctor/Profile';
-
-import FrontSidebar from './front/Sidebar';
-
-import FrontHospitalProfile from './routes/Hospital/Profile';
-import FrontHospitalMySchedule from './routes/Hospital/MySchedule';
-
-import FrontDoctorArticle from './routes/Doctor/Article';
-import FrontDoctorMySchedule from './routes/Doctor/MySchedule';
-import Chat from './routes/Doctor/Chat';
-
-import AdminArticle from './routes/Article';
-import AdminPendingArticle from './routes/PendingArticle';
-
-import FrontDoctorFeedback from './routes/Doctor/Feedback';
-import FrontHospitalFeedback from './routes/Hospital/Feedback';
-
-import AdminMapTag from './routes/MapTag';
-import AdminFeedback from './routes/Feedback';
-
-import FrontDoctorClinics from './routes/Doctor/DoctorClinic';
-import DoctorNewClinicAdd from './routes/DoctorNewClinicAdd';
-
-import OnlineConsult from './routes/Doctor/OnlineConsult';
-import FreeQA from './routes/Doctor/FreeQA';
-import AdminFreeQA from './routes/AdminFreeQA';
-import ChatConsult from './routes/ChatConsult';
-import DoctorClinicFeedback from './routes/DoctorClinic/Feedback';
-import ResetPassword from './routes/ResetPassword';
-import Appointment from './routes/Appointment';
-import JobPost from './routes/Hospital/JobPost';
-import Application from './routes/Hospital/Application';
-import ClinicJobPost from './routes/DoctorClinic/JobPost';
-import ClinicApplication from './routes/DoctorClinic/Application';
-import AdminJobPost from './routes/AdminJobPost';
-import ClinicSchedule from './routes/Doctor/ClinicSchedule';
-
-import ChatPayment from './routes/ChatPayment';
-import CommissionSetting from './routes/CommissionSetting';
+import {Route, IndexRoute, Redirect} from 'react-router';
 
 import Front from './Front';
-import TagForApproval from './routes/TagForApproval';
-import AdminSubscription from './routes/AdminSubscription';
-import SubscriptionExpired from './routes/SubscriptionExpired';
-import SubscriptionPlan from './routes/SubscriptionPlan';
-import FrontOnlineConsult from './routes/OnlineConsult';
-import PrivacyPolicy from './routes/PrivacyPolicy';
+import MainContainer from './panel/MainContainer';
+import DisplayError from './routes/DisplayError';
+
+import {
+	FrontPage,
+	Login,
+	ResetPassword,
+	ContactUs,
+	Partners,
+	DealRegistration,
+	PrivacyPolicy,
+	Refund,
+	TermsCondition,
+	Faq,
+	Features,
+	
+	DashboardNew,
+	TeacherDashboard,
+	StudentDashboard,
+
+	Academicsession,
+	Curriculum,
+	Infrastructure,
+	Bcsmap,
+	Subject,
+	Activity,
+	
+	Role,
+	User,
+	Teacher,
+	TeacherImport,
+	EmpLeaveType,
+	EmpLeave,
+	EmpAttendance,
+
+	Timetable,
+
+	Feehead,
+	FeePenalty,
+	FeeDiscount,
+	Fee,
+	FeeSubmission,
+	FeeChallan,
+
+	Student,
+	Studentimport,
+	StudentImageImport,
+	StudentBulkEdit,
+	StudentTransfer,
+	StudentPromotion,
+
+	TransportRoute,
+	TransportEmp,
+	Vehicle,
+	MapRouteVehicle,
+	StudentRoute,
+	VehicleBreakdown,
+	ParentVehicle,
+	VehicleTracking,
+
+	StudentLeave,
+	ExamBulkAttendance,
+
+	ExamHead,
+	ExamSyllabus,
+	Grade,
+	ExamSchedule,
+	Mark,
+	ActivityMark,
+	ExamPaper,
+	Question,
+	BulkUploadQuestion,
+	PaperMapWithQuestion,
+	MarksheetBuilder,
+
+	Greensheet,
+	TeacherPerformance,
+	TeacherSchedule,
+	AssignmentReport,
+	EmpLeaveReport,
+	StudentReport,
+	ClassReport,
+	Marksheet,
+	TransferCertificate,
+
+	Holiday,
+	Tag,
+	Events,
+	Circulars,
+	Complaints,
+
+	LmsChapter,
+	LmsStudyMaterial,
+
+	Assignment,
+
+	Institute,
+
+	Country,
+	State,
+	City,
+	Govtidentity,
+	Language ,
+	Contact,
+	DemoRequest,
+	Partner,
+	DealRegister,
+	EmailProvider,
+
+	Profile,
+
+	MyClasses,
+	MyStudent,
+	AttendanceHome,
+	Attendance,
+
+	SignUp,
+
+	Feed,
+	
+	StudentClasses,
+	StudentLeaveManager,
+	StudentAssignment,
+	StudentExam
+} from './routes/index';
 
 const Panel = ({children}) => <MainContainer>{children}</MainContainer>;
 
-const invalidURLs = ['/doh', '/doh/', '/admin', '/admin/', '/doctor', '/doctor/', '/hospital', '/hospital/'];
-
-function redirectWithoutSession(nextState, replace) {
+const redirectWithoutSession = (nextState, replace) => {
 	return replace('/login');
+};
+
+function getPanelRoutes(store) {
+	let state = store.getState();
+	if (!state.session || !state.session.id)
+		return <Route path='*' onEnter={redirectWithoutSession}/>;
+	let requireSession = (
+		state.session &&
+		state.session.userdetails &&
+		state.session.userdetails.academicSessions.length === 0
+	);
+	if (requireSession)
+		return (
+			<Route>
+				<Route path='setup' component={Panel}>
+					<Route path='academicsession' component={Academicsession}/>
+				</Route>
+				<Redirect from='*' to='/setup/academicsession'/>
+			</Route>
+		);
+	return (
+		<Route component={Panel}>
+			<Route path='setup'>
+				<Route path='academicsession' component={Academicsession}/>
+				<Route path='curriculum' component={Curriculum}/>
+				<Route path='infrastructure' component={Infrastructure}/>
+				<Route path='bcsmap' component={Bcsmap}/>
+				<Route path='subject' component={Subject}/>
+				<Route path='activity' component={Activity}/>
+			</Route>
+			{
+				state.session.user_type === 'teacher' &&
+				<Redirect from='dashboard' to='/dashboard/teacher'/>
+			}
+			{
+				state.session.user_type === 'student' &&
+				<Redirect from='dashboard' to='/dashboard/student'/>
+			}
+			<Route path='dashboard'>
+				<Route path='teacher' component={TeacherDashboard}/>
+				<Route path='student' component={StudentDashboard}/>
+				<IndexRoute component={DashboardNew}/>
+			</Route>
+			<Route path='hrm'>
+				<Route path='role' component={Role}/>
+				<Route path='user' component={User}/>
+				<Route path='teacher' component={Teacher}/>
+				<Route path='teacher-import' component={TeacherImport}/>
+				<Route path='empleavetype' component={EmpLeaveType}/>
+				<Route path='empleave' component={EmpLeave}/>
+				<Route path='empattendance' component={EmpAttendance}/>
+			</Route>
+			<Route path='timetable'>
+				<Route path='setup' component={Timetable}/>
+			</Route>
+			<Route path='finances'>
+				<Route path='fee-head' component={Feehead}/>
+				<Route path='fee-discount' component={FeeDiscount}/>
+				<Route path='fee-penalty' component={FeePenalty}/>
+				<Route path='fee' component={Fee}/>
+				<Route path='fee-submission' component={FeeSubmission}/>
+				<Route path='fee-challan' component={FeeChallan}/>
+			</Route>
+			<Route path='student'>
+				<Route path='admission' component={Student}/>
+				<Route path='studentimport' component={Studentimport}/>
+				<Route path='student-image-import' component={StudentImageImport}/>
+				<Route path='studentbulkedit' component={StudentBulkEdit}/>
+				<Route path='student-transfer' component={StudentTransfer}/>
+				<Route path='student-promotion' component={StudentPromotion}/>
+				<Route path='student-leave' component={StudentLeave}/>
+			</Route>
+			<Route path='transport'>
+				<Route path='transportroute' component={TransportRoute}/>
+				<Route path='transportemp' component={TransportEmp}/>
+				<Route path='vehicle'>
+					<Route path=':vehicleId/route' component={MapRouteVehicle}/>
+					<IndexRoute component={Vehicle}/>
+				</Route>
+				<Route path='student-route' component={StudentRoute}/>
+				<Route path='breakdown' component={VehicleBreakdown}/>
+				<Route path='parent-vehicle' component={ParentVehicle}/>
+				<Route path='tracking' component={VehicleTracking}/>
+			</Route>
+			<Route path='student-attendance'>
+				<Route path='attendance/:token' component={Attendance}/>
+				<Route path='attendance' component={AttendanceHome}/>
+				<Route path='bulk-attendance' component={ExamBulkAttendance}/>
+			</Route>
+			<Route path='exam'>
+				<Route path='head' component={ExamHead}/>
+				<Route path='syllabus' component={ExamSyllabus}/>
+				<Route path='grade' component={Grade}/>
+				<Route path='schedule' component={ExamSchedule}/>
+				<Route path='mark' component={Mark}/>
+				<Route path='activity-mark' component={ActivityMark}/>
+				<Route path='paper' component={ExamPaper}/>
+				<Route path='questions' component={Question}/>
+				<Route path='upload-bulk-questions' component={BulkUploadQuestion}/>
+				<Route path='map-paper-with-questions' component={PaperMapWithQuestion}/>
+				<Route path='marksheet-builder' component={MarksheetBuilder}/>
+			</Route>
+			<Route path='reports'>
+				<Route path='greensheet' component={Greensheet}/>
+				<Route path='teacher-performance' component={TeacherPerformance}/>
+				<Route path='teacher-schedule' component={TeacherSchedule}/>
+				<Route path='assignment' component={AssignmentReport}/>
+				<Route path='emp-leave' component={EmpLeaveReport}/>
+				<Route path='student' component={StudentReport}/>
+				<Route path='class' component={ClassReport}/>
+				<Route path='marksheet' component={Marksheet}/>
+				<Route path='transfer-certificate' component={TransferCertificate}/>
+			</Route>
+			<Route path='general'>
+				<Route path='holiday' component={Holiday}/>
+				<Route path='tag' component={Tag}/>
+				<Route path='event' component={Events}/>
+				<Route path='circular' component={Circulars}/>
+				<Route path='complaints' component={Complaints}/>
+			</Route>
+			<Route path='lms'>
+				<Route path='chapter' component={LmsChapter}/>
+				<Route path='study-material' component={LmsStudyMaterial}/>
+			</Route>
+			<Route path='assignment'>
+				<Route path='setup' component={Assignment}/>
+			</Route>
+			<Route path='institute'>
+				<Route path='setup' component={Institute}/>
+			</Route>
+			<Route path='settings'>
+				<Route path='country' component={Country}/>
+				<Route path='state' component={State}/>
+				<Route path='city' component={City}/>
+				<Route path='govtidentity' component={Govtidentity}/>
+				<Route path='language' component={Language}/>
+				<Route path='contact' component={Contact}/>
+				<Route path='demorequest' component={DemoRequest}/>
+				<Route path='partner' component={Partner}/>
+				<Route path='dealregister' component={DealRegister}/>
+				<Route path='emailprovider' component={EmailProvider}/>
+			</Route>
+			<Route path='profile' component={Profile}/>
+			<Route path='my-student' component={MyStudent}/>
+			<Route path='classes' component={MyClasses}/>
+			<Route path='feed' component={Feed}/>
+			<Route path='student-classes' component={StudentClasses}/>
+			<Route path='student-leave' component={StudentLeaveManager}/>
+			<Route path='student-assignment' component={StudentAssignment}/>
+			<Route path='student-exam'>
+				<Route path='schedule' component={StudentExam}/>
+			</Route>
+		</Route>
+	);
 }
 
-function redirectSubscriptionExpired(nextState, replace) {
-	return replace('/subscription-expired');
-}
+const redirectOnLogin = (nextState, replace) => {
+	replace('/dashboard');
+};
 
 const nothing = () => undefined;
 
-class Admin extends React.Component {
-	render() {
-		return (
-			<MainContainer {...this.props}>
-				<div id='body1' className="main-wrapper">
-					<Adminloginheader />
-					{this.props.children}
-					<Adminloginfooter />
-				</div>
-			</MainContainer>
-		);
-	}
-}
-
-class AdminDashboard extends React.Component {
-	render() {
-		return (
-			<MainContainer {...this.props}>
-				<Sidebar />
-				<Header />
-				<div id='body'>
-					<Grid>
-						<Row>
-							<Col xs={12}>
-							{this.props.children}
-							</Col>
-						</Row>
-					</Grid>
-				</div>
-				<Footer />
-			</MainContainer>
-		);
-	}
-}
-
-class FrontDashboard extends React.Component {
-	render() {
-		return (
-			<MainContainer {...this.props}>
-				<FrontSidebar />
-				<Header />
-				<div id='body' className="front-dash-theme">
-					<Grid>
-						<Row>
-							<Col xs={12}>
-							{this.props.children}
-							</Col>
-						</Row>
-					</Grid>
-				</div>
-				<Footer />
-			</MainContainer>
-		);
-	}
-}
-
-const adminRoutes = session => {
-	if (session.user_type !== 'admin') {
-		return <Route path='*' onEnter={redirectWithoutSession}/>;
-	}
-	return <Route component={AdminDashboard}>
-        <Route path='account' component={Account}/>
-        <Route path='dashboard' component={Dashboard}/>
-        <Route path='section' component={Section}/>
-        <Route path='role' component={Role}/>
-        <Route path='tag' component={Tag}/>
-        <Route path='country' component={Country}/>
-        <Route path='state' component={State}/>
-        <Route path='city' component={City}/>
-        <Route path='hospital' component={Hospital}/>
-        <Route path='doctors' component={Doctor}/>
-        <Route path='patient' component={Patient}/>
-        <Route path='articles' component={AdminArticle}/>
-        <Route path='articles/pending' component={AdminPendingArticle}/>
-        <Route path='map-tag' component={AdminMapTag}/>
-        <Route path='feedback' component={AdminFeedback}/>
-        <Route path='freeqa' component={AdminFreeQA}/>
-        <Route path='chat-consult' component={ChatConsult}/>
-        <Route path='appointment' component={Appointment}/>
-        <Route path='job-post' component={AdminJobPost}/>
-        <Route path='chatpayment' component={ChatPayment}/>
-        <Route path='commission-setting' component={CommissionSetting}/>
-        <Route path='tags-for-approval' component={TagForApproval}/>
-        <Route path='subscription' component={AdminSubscription}/>
-    </Route>
-};
-
-const doctorProfileRoutes = session => {
-	if (session.user_type !== 'doctor') {
-		return <Route path='*' onEnter={redirectWithoutSession}/>;
-	}
-	return <Route component={FrontDashboard}>
-		<Route path='account' component={Account}/>
-		<Route path='profile' component={FrontDoctorProfile}/>
-		<Route path='article' component={FrontDoctorArticle}/>
-		<Route path='myschedule' component={FrontDoctorMySchedule}/>
-		<Route path='feedback' component={FrontDoctorFeedback}/>
-		<Route path='my-clinics' component={FrontDoctorClinics}/>
-		<Route path='add-clinic' component={DoctorNewClinicAdd}/>
-		<Route path='onlineconsult' component={OnlineConsult}/>
-		<Route path='freeqa' component={FreeQA}/>
-		<Route path='chat' component={Chat}/>
-		<Route path='clinic-schedule' component={ClinicSchedule}/>
-	</Route>
-};
-
-const hospitalProfileRoutes = session => {
-	if (session.user_type !== 'hospital') {
-		return <Route path='*' onEnter={redirectWithoutSession}/>;
-	}
-	return <Route component={FrontDashboard}>
-		<Route path='account' component={Account}/>
-		<Route path='profile' component={FrontHospitalProfile}/>
-		<Route path='myschedule' component={FrontHospitalMySchedule}/>
-		<Route path='feedback' component={FrontHospitalFeedback}/>
-		<Route path='job-post' component={JobPost}/>
-		<Route path='application' component={Application}/>
-	</Route>
-};
-
-const doctorHospitalProfileRoutes = session => {
-	if (session.user_type !== 'doctor_clinic_both') {
-		return <Route path='*' onEnter={redirectWithoutSession}/>;
-	}
-	return <Route component={FrontDashboard}>
-		<Route path='account' component={Account}/>
-		<Route path='profile' component={FrontDoctorProfile}/>
-		<Route path='article' component={FrontDoctorArticle}/>
-		<Route path='feedback' component={DoctorClinicFeedback}/>
-		<Route path='my-clinics' component={FrontDoctorClinics}/>
-		<Route path='add-clinic' component={DoctorNewClinicAdd}/>
-		<Route path='myschedule' component={FrontDoctorMySchedule}/>
-		<Route path='clinic-schedule' component={ClinicSchedule}/>
-		<Route path='onlineconsult' component={OnlineConsult}/>
-		<Route path='job-post' component={ClinicJobPost}/>
-		<Route path='application' component={ClinicApplication}/>
-		<Route path='freeqa' component={FreeQA}/>
-		<Route path='chat' component={Chat}/>
-	</Route>
-};
-
-function getCombinedRoutes(store) {
-	let state = store.getState();
-	if (!state.session || !state.session.id) {
-		return <Route path='*' onEnter={redirectWithoutSession}/>;
-	}
-
-	if((state.session.user_type === 'doctor' || state.session.user_type === 'hospital' || state.session.user_type === 'doctor_clinic_both') && !state.session.subscription) {
-		return <Route path='*' onEnter={redirectSubscriptionExpired}/>;
-	}
-
-	if(invalidURLs.indexOf(state.location.pathname) !== -1) {
-		return <Route path='*' onEnter={redirectWithoutSession}/>;
-	}
-
-	return ( 
-		<Route>
-			<Route path='/doctor'>
-				{doctorProfileRoutes(state.session)}
-			</Route>
-			<Route path='/hospital'>
-				{hospitalProfileRoutes(state.session)}
-			</Route>
-			<Route path='/doh'>
-				{doctorHospitalProfileRoutes(state.session)}
-			</Route>
-			<Route path='/admin'>
-				{adminRoutes(state.session)}
-			</Route>
-		</Route>
-	)
-}
-
-function getBasicRoutes(store) {
-
+function getFrontRoutes(store) {
 	let state = store.getState();
 	let loggedIn = state.session && state.session.id;
-	function redirectOnLogin(nextState, replace) {
-		if(loggedIn && "doctor" === state.session.user_type) {
-			replace('/doctor/profile');	
-		} else if(loggedIn && "doctor_clinic_both" === state.session.user_type) {
-			replace('/doh/profile');
-		} else if(loggedIn && "hospital" === state.session.user_type) {
-			replace('/hospital/profile');	
-		} else {
-			replace('/admin/dashboard');
-		}
-	}
 	return (
 		<Route component={Front}>
-			<Route path='/login' component={Signup} onEnter={loggedIn ? redirectOnLogin : nothing} />
-			<Route path='/admin' component={Adminloginpage} onEnter={loggedIn ? redirectOnLogin : nothing}/>
-			<Route path='/reset-password/:token' component={ResetPassword}/>
-			<Route path='/careers' component={Careers}/>
-			<Route path='/careers/detail/:id' component={CareerDetail}/>
-			<Route path='/careers/apply/:id' component={CareerApply}/>
-			<Route path='/about-us' component={AboutUs}/>
-			<Route path='/features' component={Feature}/>
-			<Route path='/subscription-expired' component={SubscriptionExpired}/>
-			<Route path='/subscription-plans' component={SubscriptionPlan}/>
-			<Route path='/article' component={FrontArticle}/>
-			<Route path='/online-consult' component={FrontOnlineConsult}/>
-			<Route path='/privacy-policy' component={PrivacyPolicy}/>
-			<Route path='/' component={Home}/>
+			<Route path='login' component={Login} onEnter={loggedIn ? redirectOnLogin : nothing}/>
+			<Route
+				path='forgot-password/:token'
+				component={ResetPassword}
+				onEnter={loggedIn ? redirectOnLogin : nothing}/>
+			<Route path='contact-us' component={ContactUs}/>
+			<Route path='partners' component={Partners}/>
+
+			<Route path='privacy-policy' component={PrivacyPolicy}/>
+			<Route path='terms-condition' component={TermsCondition}/>
+			<Route path='refund-policy' component={Refund}/>
+			<Route path='faq' component={Faq}/>
+			<Route path='features' component={Features}/>
+
+			<Route path='dealregistration' component={DealRegistration}/>
+			
+			<Route path='sign-up' component={SignUp}/>
+
+			<Route path='/' component={FrontPage}/>
 		</Route>
 	);
 }
 
 const getRoutes = store => (location, cb) => {
+	/* eslint react/jsx-key: off*/
 	cb(null, [
 		<Route path='503' component={DisplayError}/>,
 		<Route path='500' component={DisplayError}/>,
 		<Route path='401' component={DisplayError}/>,
 		<Route path='404' component={DisplayError}/>,
-		getBasicRoutes(store),
-		getCombinedRoutes(store),
+		getFrontRoutes(store),
+		getPanelRoutes(store),
 		<Route path='*' component={DisplayError}/>
 	]);
 };
 
-export default function (store) {
-	return (
-		<Route getChildRoutes={getRoutes(store)}/>
-	);
+export default function Routes (store) {
+	return <Route getChildRoutes={getRoutes(store)}/>;
 }

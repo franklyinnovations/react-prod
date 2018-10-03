@@ -1,33 +1,32 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
-import classNames from 'classnames';
-import { Link } from 'react-router';
 import { connect } from 'react-redux';
-import actions from '../redux/actions';
-import Banner from '../front/Banner';
-import Footer from '../front/Footer';
-
+import {IndexLink} from 'react-router';
 import {
-	Button,
+	Form,
 	FormGroup,
-	FormControl,
-	Tabs,
-	Tab,
 	HelpBlock,
-} from '@sketchpixy/rubix';
+	Clearfix,
+} from '../components';
 
-@connect(state => ({...state.view.resetpassword}))
-export default class Signup extends React.Component {
+import {addView} from '../redux/reducers/views';
+import reducer from '../redux/reducers/resetpassword';
+import * as actions from '../redux/actions/resetpassword';
+addView('resetpassword', reducer);
+
+@connect(state => ({...state.view.state}))
+export default class ResetPassword extends React.Component {
 	static fetchData(store) {
-		return store.dispatch(actions.resetpassword.init());
+		return store.dispatch(actions.init());
 	}
 
 	update = e => {
-		this.props.dispatch({
-			type: e.target.getAttribute('data-action-type'),
-			name: e.target.name,
-			value: e.target.value
-		});
+		this.props.dispatch(
+			actions.update(
+				e.target.getAttribute('data-action-type'),
+				e.target.name,
+				e.target.value
+			)
+		);
 	};
 
 	resetPassword = e => {
@@ -35,7 +34,7 @@ export default class Signup extends React.Component {
 		e.stopPropagation();
 		if (this.props.sendingRequest) return;
 		this.props.dispatch(
-			actions.resetpassword.sendRequest(
+			actions.sendRequest(
 				this.props.newPassword,
 				this.props.confirmPassword,
 				this.props.routeParams.token,
@@ -46,57 +45,74 @@ export default class Signup extends React.Component {
 
 	render() {
 		return (
-			<div id='front2'>
-				<Banner>
-					<div className="loginContent pt-50">
-						<div className="login-page ld-wrapper" style={{backgroundColor:'#009eb3',padding:15,width:'100%', maxWidth: '540px', margin:'auto'}}>
-							<div className='text-center'>
-								<h3
-									style={{color: '#333', marginTop: 0}}>
-									Reset Password
-								</h3>
-							</div>
-							<FormGroup
-								controlId='newPassword'
-								validationState={this.props.errors.newPassword ? 'error': null}
-							>
-								<FormControl
-									type="password"
-									placeholder="New Password"
-									name='newPassword'
-									data-action-type='UPDATE_RP_DATA_VALUE'
-									value={this.props.newPassword}
-									onChange={this.update}
-								/>
-								<HelpBlock>{this.props.errors.newPassword}</HelpBlock>
-							</FormGroup>
-							<FormGroup
-								controlId='confirmPassword'
-								validationState={this.props.errors.confirmPassword ? 'error': null}
-							>
-								<FormControl
-									type="password"
-									placeholder="Confirm Password"
-									name='confirmPassword'
-									data-action-type='UPDATE_RP_DATA_VALUE'
-									value={this.props.confirmPassword}
-									onChange={this.update}
-								/>
-								<HelpBlock>{this.props.errors.confirmPassword}</HelpBlock>
-							</FormGroup>
-							<div className="form-group">
-								<Button
-									type='submit'
-									lg
-									className="btl"
-									onClick={this.resetPassword}>
-									Reset Password
-								</Button>
+			<div id='front' className='home-pg'>
+				<header className="site-header login-header">
+					<div className="logo">
+						<IndexLink to="/">
+							<img src="/imgs/front/pateast-logo-white.png" alt="Pateast" />
+						</IndexLink>
+					</div>
+				</header>
+				<div className="login-banner-section">
+					<span className="banner-top"/>
+					<div className="container">
+						<div className="row">
+							<div className="col-sm-12">
+								<Form onSubmit={this.resetPassword} className="login-inner-box">
+									<h2>Reset Password</h2>
+									<ul className='login-form'>
+										<li className="login-password">
+											<input
+												type="password"
+												placeholder="New Password"
+												name='newPassword'
+												data-action-type='UPDATE_RP_DATA_VALUE'
+												value={this.props.newPassword}
+												onChange={this.update}/>
+										</li>
+										<Clearfix/>
+										<FormGroup validationState={this.props.errors.newPassword ? 'error' : null}>
+											<HelpBlock>{this.props.errors.newPassword}</HelpBlock>
+										</FormGroup>
+										<li className="login-password">
+											<input
+												type="password"
+												placeholder="Confirm Password"
+												name='confirmPassword'
+												data-action-type='UPDATE_RP_DATA_VALUE'
+												value={this.props.confirmPassword}
+												onChange={this.update}/>
+										</li>
+										<Clearfix/>
+										<FormGroup validationState={this.props.errors.confirmPassword ? 'error' : null}>
+											<HelpBlock>{this.props.errors.confirmPassword}</HelpBlock>
+										</FormGroup>
+										<li>
+											<FormGroup validationState={this.props.errors.message ? 'error' : null}>
+												<HelpBlock>{this.props.errors.message}</HelpBlock>
+											</FormGroup>
+											<button
+												onClick={this.resetPassword}
+												type="submit"
+												className="btn btn-rouned btn-primary">
+												Reset Password
+											</button>{' '}
+										</li>
+									</ul>
+								</Form>
 							</div>
 						</div>
 					</div>
-				</Banner>
-				<Footer/>
+					<div className="login-vectors">
+						<span className="login-watch">
+							<img src="/imgs/front/login-watch.png" className="img-responsive"/>
+						</span>
+						<span className="login-user">
+							<img src="/imgs/front/login-user.png" className="img-responsive"/>
+						</span>
+						<span className="banner-bottom"/>
+					</div>
+				</div>
 			</div>
 		);
 	}

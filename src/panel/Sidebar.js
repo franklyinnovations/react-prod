@@ -1,209 +1,852 @@
 import React from 'react';
+import {Link, withRouter} from 'react-router';
+import {Text} from '../components';
 
-import {
-	Sidebar, SidebarNav, SidebarNavItem,
-	SidebarControls, SidebarControlBtn,
-	LoremIpsum, Grid, Row, Col, FormControl,
-	Label, Progress, Icon,
-	SidebarDivider
-} from '@sketchpixy/rubix';
+export function filterMenus (menus, modules, user_type) {
+	let result = [];
+	for (let i = 0; i < menus.length; i++) {
+		let menu = menus[i];
+		if (menu.children) {
+			let children = menu.children,
+				subMenus = [];
 
-import { connect } from 'react-redux';
-import { Link, withRouter } from 'react-router';
-import ServiceImage from '../components/ServiceImage';
-import makeTranslater from '../translate';
+			for (let j = 0; j < children.length; j++)
+				if (modules[children[j].module] && children[j].user_type.indexOf(user_type) !== -1) {
+					if (children[j].action) {
+						if (modules[children[j].module].indexOf(children[j].action) !== -1)
+							subMenus.push(children[j]);
+					} else {
+						subMenus.push(children[j]);
+					}
+				}
 
-@withRouter
-@connect(state => ({
-	session: state.session,
-	translations: state.translations,
-	lang: state.lang
-}))
-class ApplicationSidebar extends React.Component {
-	constructor(props) {
-		super(props);
-		//this.menu = this.filterMenu([]);
+			if (subMenus.length !== 0) {
+				result.push({
+					...menu,
+					children: subMenus,
+				});
+			}
+		} else if (modules[menu.module] && menu.user_type.indexOf(user_type) !== -1) {
+			if (menu.action) {
+				if (modules[menu.module].indexOf(menu.action) !== -1) {
+					result.push(menu);	
+				}
+			} else {
+				result.push(menu);
+			}
+		}
 	}
+	return result;
+}
 
-	handleChange(e) {
-		this._nav.search(e.target.value);
-	}
+export const menus = [
+	{
+		icon: '/imgs/admin/dashboard.png',
+		name: 'Dashboard',
+		href: '/dashboard',
+		module: 'dashboard',
+		user_type: ['admin','institute','teacher','student'],
+	},
+	{
+		icon: '/imgs/admin/feed.png',
+		name: 'Feed',
+		href: '/feed',
+		module: 'feed',
+		user_type: ['admin','institute','teacher','student'],
+	},
+	{
+		icon: '/imgs/admin/institute.png',
+		name: 'Institute',
+		href: '/institute/setup',
+		module: 'institute',
+		user_type: ['admin'],
+	},
+	{
+		icon: '/imgs/admin/my-class.png',
+		name: 'My Classes',
+		href: '/classes',
+		module: 'teacherclasses',
+		user_type: ['admin','institute','teacher'],
+	},
+	{
+		icon: '/imgs/admin/my-student.png',
+		name: 'My Student',
+		href: '/my-student',
+		module: 'mystudent',
+		user_type: ['admin','institute','teacher'],
+	},
+	{
+		icon: '/imgs/admin/school_setup.png',
+		name: 'School Setup',
+		href: '/setup',
+		children: [
+			{
+				name: 'Academic Session',
+				href: '/academicsession',
+				module: 'academicsession',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Curriculum Type',
+				href: '/curriculum',
+				module: 'board',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Infrastructure',
+				href: '/infrastructure',
+				module: 'infrastructure',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Classes & Sections',
+				href: '/bcsmap',
+				module: 'bcsmap',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Subjects & Sub Subjects',
+				href: '/subject',
+				module: 'subject',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Activities',
+				href: '/activity',
+				module: 'activity',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Admission Form URL Genrator',
+				href: '/admission-form',
+				module: 'admissionform',
+				user_type: ['admin','institute','teacher'],
+			},
+		]
+	},
+	{
+		icon: '/imgs/admin/hrm.png',
+		name: 'HRM',
+		href: '/hrm',
+		children: [
+			{
+				name:'User Roles',
+				href: '/role',
+				module: 'role',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Admin Users',
+				href: '/user',
+				module: 'user',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Teachers',
+				href: '/teacher',
+				module: 'teacher',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Import Teachers',
+				href: '/teacher-import',
+				module: 'teacher',
+				action: 'import',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Leave Types',
+				href: '/empleavetype',
+				module: 'empleavetype',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Employee Leaves',
+				href: '/empleave',
+				module: 'empleave',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Employee Attendance',
+				href: '/empattendance',
+				module: 'empattendance',
+				user_type: ['admin','institute','teacher'],
+			}
+		]
+	},
+	{
+		icon: '/imgs/admin/timetable.png',
+		name: 'Timetable',
+		href: '/timetable/setup',
+		module: 'timetable',
+		user_type: ['admin','institute','teacher'],
+	},
+	{
+		icon: '/imgs/admin/account-finance.png',
+		name: 'Fees',
+		href: '/finances',
+		children: [
+			{
+				name: 'Fee Head',
+				href: '/fee-head',
+				module: 'feehead',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Fee Penalties',
+				href: '/fee-penalty',
+				module: 'feepenalty',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Fee Discounts',
+				href: '/fee-discount',
+				module: 'feediscount',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Fee-Class Mapping',
+				href: '/fee',
+				module: 'fee',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Fee Submission',
+				href: '/fee-submission',
+				module: 'feesubmission',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Challan',
+				href: '/fee-challan',
+				module: 'challan',
+				user_type: ['admin','institute','teacher'],
+			}
+		]
+	},
+	{
+		icon: '/imgs/admin/student-managment.png',
+		name: 'Student Management',
+		href: '/student',
+		children: [
+			{
+				name: 'Student Admission',
+				href: '/admission',
+				module: 'student',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Import Students',
+				href: '/studentimport',
+				module: 'student',
+				action: 'importdata',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Import Images',
+				href: '/student-image-import',
+				module: 'student',
+				action: 'importimage',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Bulk Student Edit',
+				href: '/studentbulkedit',
+				module: 'studentbulkedit',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Transfer To Class',
+				href: '/student-transfer',
+				module: 'student',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Student Rollover',
+				href: '/student-promotion',
+				module: 'student',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Applied Leaves & Status',
+				href: '/student-leave',
+				module: 'studentleave',
+				user_type: ['admin','institute','teacher'],
+			}
+		]
+	},
+	{
+		icon: '/imgs/admin/student_attendance.png',
+		name: 'Student Attendance',
+		href: '/student-attendance',
+		children: [
+			{
+				icon: '/imgs/admin/Attendance.png',
+				name: 'Attendance',
+				href: '/attendance',
+				module: 'attendance',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Bulk Attendance',
+				href: '/bulk-attendance',
+				module: 'exambulkattendance',
+				user_type: ['admin','institute','teacher'],
+			}
+		]
+	},
+	{
+		icon: '/imgs/admin/transport.png',
+		name: 'Transport',
+		href: '/transport',
+		children: [
+			{
+				name: 'Routes Management',
+				href: '/transportroute',
+				module: 'route',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Drivers-Helpers',
+				href: '/transportemp',
+				module: 'transportemp',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Vehicle Management',
+				href: '/vehicle',
+				module: 'vehicle',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Student Mapping',
+				href: '/student-route',
+				module: 'rvdhsmap',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Breakdown',
+				href: '/breakdown',
+				module: 'vehiclebreakdown',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Parents Vehicle Passes',
+				href: '/parent-vehicle',
+				module: 'parentvehicle',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Tracking',
+				href: '/tracking',
+				module: 'vehicle',
+				user_type: ['admin','institute','teacher'],
+			},
+		]
+	},
+	{
+		icon: '/imgs/admin/examination.png',
+		name: 'Exam Settings',
+		href: '/exam',
+		children: [
+			{
+				name: 'Exam Groups',
+				href: '/head',
+				module: 'examhead',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Exam Schedule',
+				href: '/schedule',
+				module: 'examschedule',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Exam Syllabus',
+				href: '/syllabus',
+				module: 'syllabus',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Define Grades',
+				href: '/grade',
+				module: 'grade',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Exam Marks',
+				href: '/mark',
+				module: 'mark',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Activities Marks',
+				href: '/activity-mark',
+				module: 'activitymark',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Exam Paper',
+				href: '/paper',
+				module: 'exam_paper',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Question Bank',
+				href: '/questions',
+				module: 'question',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Upload Bulk Questions',
+				href: '/upload-bulk-questions',
+				module: 'question',
+				action: 'add',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Question-Paper Mapping',
+				href: '/map-paper-with-questions',
+				module: 'exam_paper',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Marksheet Builder',
+				href: '/marksheet-builder',
+				module: 'marksheetbuilder',
+				user_type: ['admin','institute','teacher'],
+			},
+		]
+	},
+	{
+		icon: '/imgs/admin/assignments.png',
+		name: 'Assignments',
+		href: '/assignment/setup',
+		module: 'assignment',
+		user_type: ['admin','institute','teacher'],
+	},
+	{
+		icon: '/imgs/admin/lms.png',
+		name: 'LMS',
+		href: '/lms',
+		children: [
+			{
+				name: 'Chapter Management',
+				href: '/chapter',
+				module: 'lmschapter',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Study Material',
+				href: '/study-material',
+				module: 'lmsstudymaterial',
+				user_type: ['admin','institute','teacher'],
+			}
+		]
+	},
+	{
+		icon: '/imgs/admin/genaral-managment.png',
+		name: 'General Management',
+		href: '/general',
+		children: [
+			{
+				name:'Manage Holidays',
+				href: '/holiday',
+				module: 'holiday',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Tag Management',
+				href: '/tag',
+				module: 'tag',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Event Management',
+				href: '/event',
+				module: 'event',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Circular Management',
+				href: '/circular',
+				module: 'circular',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name:'Complaint Management',
+				href: '/complaints',
+				module: 'complaints',
+				user_type: ['admin','institute','teacher'],
+				
+			},
+		]
+	},
+	{
+		icon: '/imgs/admin/reports.png',
+		name: 'Reports',
+		href: '/reports',
+		children: [
+			{
+				name: 'Greensheet',
+				href: '/greensheet',
+				module: 'greensheet',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Teacher Performance',
+				href: '/teacher-performance',
+				module: 'greensheet',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Teacher Schedule',
+				href: '/teacher-schedule',
+				module: 'timetable',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Assignment Details',
+				href: '/assignment',
+				module: 'assignment',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Employee Leaves',
+				href: '/emp-leave',
+				module: 'empleave',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Student Report',
+				href: '/student',
+				module: 'student',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Teacher Daily Report',
+				href: '/class',
+				module: 'classreport',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Mark Sheet',
+				href: '/marksheet',
+				module: 'marksheet',
+				user_type: ['admin','institute','teacher'],
+			},
+			{
+				name: 'Transfer Certificate',
+				href: '/transfer-certificate',
+				module: 'transcertfkt',
+				user_type: ['admin','institute','teacher'],
+			},
+		]
+	},
+	{
+		icon: '/imgs/admin/support.png',
+		name: 'Customer Support',
+		href: '/ticket',
+		module: 'ticket',
+		user_type: ['admin','institute','teacher'],
+	},
+	{
+		icon: '/imgs/admin/settings.png',
+		name: 'Settings',
+		href: '/settings',
+		children: [
+			{
+				name: 'Countries',
+				href: '/country',
+				module: 'country',
+				user_type: ['admin'],
+			},
+			{
+				name: 'States',
+				href: '/state',
+				module: 'state',
+				user_type: ['admin'],
+			},
+			{
+				name: 'Cities',
+				href: '/city',
+				module: 'city',
+				user_type: ['admin'],
+			},
+			{
+				name: 'Government Identity',
+				href: '/govtidentity',
+				module: 'govtidentity',
+				user_type: ['admin'],
+			},
+			{
+				name: 'Languages',
+				href: '/language',
+				module: 'language',
+				user_type: ['admin'],
+			},
+			{
+				name:'Contact Us',
+				href: '/contact',
+				module: 'contact',
+				user_type: ['admin'],
+			},
+			{
+				name:'Demo Requests',
+				href: '/demorequest',
+				module: 'demorequest',
+				user_type: ['admin'],
+			},
+			{
+				name:'Partner',
+				href: '/partner',
+				module: 'partner',
+				user_type: ['admin'],
+			},
+			{
+				name:'Deal Registration',
+				href: '/dealregister',
+				module: 'dealregistration',
+				user_type: ['admin'],
+			},
+			{
+				name: 'Email Provider',
+				href: '/emailprovider',
+				module: 'emailprovider',
+				user_type: ['admin'],
+			}
+		]
+	},
+	{
+		icon: '/imgs/admin/my-class.png',
+		name: 'Classes',
+		href: '/student-classes',
+		module: 'studentclasses',
+		user_type: ['student'],
+	},
+	{
+		icon: '/imgs/admin/my-class.png',
+		name: 'Leaves',
+		href: '/student-leave',
+		module: 'studentleave',
+		user_type: ['student'],
+	},
+	{
+		icon: '/imgs/admin/assignments.png',
+		name: 'Assignments',
+		href: '/student-assignment',
+		module: 'assignment',
+		action: 'view',
+		user_type: ['student'],
+	},
+	{
+		icon: '/imgs/admin/examination.png',
+		name: 'Exams',
+		href: '/student-exam',
+		children: [
+			{
+				name: 'Exam Schedule',
+				href: '/schedule',
+				module: 'examschedule',
+				action: 'view',
+				user_type: ['student'],
+			},
+			/*{
+				name: 'Exam Syllabus',
+				href: '/student-syllabus',
+				module: 'syllabus',
+				action: 'view',
+				user_type: ['student'],
+			},
+			{
+				name: 'Exam Marks',
+				href: '/student-mark',
+				module: 'mark',
+				action: 'view',
+				user_type: ['student'],
+			},
+			{
+				name: 'Activities Marks',
+				href: '/student-activity-mark',
+				module: 'activitymark',
+				action: 'view',
+				user_type: ['student'],
+			},*/
+		]
+	},
+	/*{
+		icon: '/imgs/admin/Attendance.png',
+		name: 'Attendance',
+		href: '/student-attendance',
+		module: 'attendance',
+		action: 'view',
+		user_type: ['student'],
+	},
+	{
+		icon: '/imgs/admin/lms.png',
+		name: 'LMS',
+		href: '/lms/study-material',
+		module: 'lmsstudymaterial',
+		action: 'view',
+		user_type: ['student'],
+	},
+	{
+		icon: '/imgs/admin/genaral-managment.png',
+		name: 'General',
+		href: '/general',
+		children: [
+			{
+				name:'Holidays',
+				href: '/holiday',
+				module: 'holiday',
+				action: 'view',
+				user_type: ['student'],
+			},
+			{
+				name: 'Events',
+				href: '/student-event',
+				module: 'event',
+				action: 'view',
+				user_type: ['student'],
+			},
+			{
+				name: 'Circulars',
+				href: '/student-circular',
+				module: 'circular',
+				action: 'view',
+				user_type: ['student'],
+			},
+			{
+				name:'Complaints',
+				href: '/student-complaints',
+				module: 'complaints',
+				action: 'view',
+				user_type: ['student'],
+			},
+		]
+	},*/
+];
+
+class SidebarLink extends React.Component {
+	navigate = event => {
+		event.preventDefault();
+		event.stopPropagation();
+		let menu = this.props.menu;
+		this.props.router.push(
+			menu.children ? (menu.href + menu.children[0].href) : menu.href
+		);
+	};
 
 	render() {
-		let __ = makeTranslater(
-			this.props.translations,
-			this.props.lang.code
-		);
-		
+		const menu = this.props.menu;
 		return (
-			<div>
-				<Grid>
-					<Row>
-						<Col xs={12}>
-							<FormControl type='text' placeholder='Search...' onChange={::this.handleChange} className='sidebar-search' style={{border: 'none', background: 'none', margin: '10px 0 0 0', borderBottom: '1px solid #666', color: 'white'}} />
-							<div className='sidebar-nav-container'>
-								{"admin" === this.props.session.user_type && this.superadminPanels(__) }
-							</div>
-						</Col>
-					</Row>
-				</Grid>
+			<Link
+				to={menu.href}
+				onClick={this.navigate}
+				activeClassName='active'>
+				<img src={menu.icon}/>
+				<div><Text>{menu.name}</Text></div>
+			</Link>
+		);
+	}
+}
+
+@withRouter
+export default class Sidebar extends React.Component {
+
+	state = {
+		hiddenMenuIndex: 0,
+	};
+
+	showMenu = event => $(event.currentTarget).addClass('active');
+	hideMenu = event => {
+		let target = $(event.currentTarget);
+		setTimeout(() => target.removeClass('active'), 300);
+	};
+	setHiddenMenuIndex = () => {
+		let menus = document.getElementById('sidebar').firstElementChild,
+			rect = menus.getBoundingClientRect(),
+			availableSpace = window.innerHeight - rect.bottom - 40;
+
+		if (availableSpace >= 78 && this.state.hiddenMenuIndex < this.props.menus.length) {
+			this.setState({
+				hiddenMenuIndex: this.state.hiddenMenuIndex + 1,
+			}, this.setHiddenMenuIndex);
+		} else if (availableSpace < 0 && this.state.hiddenMenuIndex - 1 > 0) {
+			this.setState({
+				hiddenMenuIndex: this.state.hiddenMenuIndex - 1
+			}, this.setHiddenMenuIndex);
+		}
+	};
+
+
+	render () {
+		let visibleMenus = [], hiddenMenus = [];
+
+		for (let i = 0; i < this.state.hiddenMenuIndex; i++) {
+			let menu = this.props.menus[i];
+			visibleMenus.push(
+				<SidebarLink key={menu.name} router={this.props.router} menu={menu}/>
+			);	
+		}
+
+		let visibleMenu = null;
+
+		for (let i = this.state.hiddenMenuIndex; i < this.props.menus.length; i++) {
+			let menu = this.props.menus[i];
+			if (this.props.router.isActive(menu.href)) visibleMenu = hiddenMenus.length;
+			hiddenMenus.push(
+				<SidebarLink key={menu.name} menu={menu} router={this.props.router}/>
+			);
+		}
+
+		if (visibleMenu !== null) 
+			visibleMenus.push(hiddenMenus.splice(visibleMenu, 1, visibleMenus.pop()));
+
+		return (
+			<div id='sidebar'>
+				<div>{visibleMenus}</div>
+				{
+					hiddenMenus.length !== 0 &&
+					<React.Fragment>
+						<div tabIndex='1' onBlur={this.hideMenu} onFocus={this.showMenu}>
+							<span/><span/><span/>
+						</div>
+						<div>{hiddenMenus}</div>
+					</React.Fragment>
+				}
 			</div>
 		);
 	}
 
-	componentWillReceiveProps() {
-		//this.menu = this.filterMenu(menus);
+	componentDidMount() {
+		this.setHiddenMenuIndex();
+		$(window).on('resize', this.setHiddenMenuIndex);
 	}
 
-	filterMenu(menus) {
-		let modules = this.props.session.modules,
-			result = [];
-		for (let i = 0; i < menus.length; i++) {
-			let menu = menus[i];
-			if (menu.module) {
-				if (modules[menu.module])
-					result.push(menu);
-			} else if (menu.children) {
-				menu = {...menu};
-				menu.children = this.filterMenu(menu.children);
-				if (menu.children.length) result.push(menu);
-			}
-		}
-		return result;
-	}
-
-	superadminPanels(__) {
-		return (
-			<SidebarNav style={{marginBottom: 0}} ref={(c) => this._nav = c}>
-				<SidebarNavItem glyph='icon-simple-line-icons-home' name={__('Dashboard')} href='/admin/dashboard' />
-				<SidebarNavItem glyph='icon-fontello-hospital' name={<span>{__('Hospitals')}</span>}>
-				 	<SidebarNav>
-				 		<SidebarNavItem name={__('List')} href='/admin/hospital' />
-					 </SidebarNav>
-				</SidebarNavItem>
-				<SidebarNavItem glyph='icon-fontello-user-md' name={<span>{__('Doctors')}</span>}>
-				 	<SidebarNav>
-				 		<SidebarNavItem name={__('List')} href='/admin/doctors' />
-					 </SidebarNav>
-				</SidebarNavItem>
-				<SidebarNavItem glyph='icon-stroke-gap-icons-Users' name={<span>{__('Patient')}</span>}>
-					<SidebarNav>
-						<SidebarNavItem name={__('List')} href='/admin/patient' />
-					 </SidebarNav>
-				</SidebarNavItem>
-				<SidebarNavItem glyph='icon-fontello-article-alt-1' name={__('Appointments')} href='/admin/appointment' />
-	            <SidebarNavItem glyph='icon-fontello-article-alt-1' name={<span>{__('Article')}</span>}>
-					<SidebarNav>
-						<SidebarNavItem name={__('Article list')} href='/admin/articles' />
-						<SidebarNavItem name={__('Articles for approval')} href='/admin/articles/pending' />
-					 </SidebarNav>
-				</SidebarNavItem>
-				<SidebarNavItem glyph='icon-simple-line-icons-home' name={__('Feedbacks')} href='/admin/feedback' />
-				<SidebarNavItem glyph='icon-fontello-question' name={<span>{__('Online Consultation')}</span>}>
-					<SidebarNav>
-						<SidebarNavItem name={__("Free QA's")} href='/admin/freeqa' />
-						<SidebarNavItem name={__("Chat Consult")} href='/admin/chat-consult' />
-					 </SidebarNav>
-				</SidebarNavItem>
-				<SidebarNavItem glyph='icon-fontello-money' name={<span>{__('Payment Manager')}</span>}>
-					<SidebarNav>
-						<SidebarNavItem name={__("Chat Payments")} href='/admin/chatpayment' />
-					 </SidebarNav>
-				</SidebarNavItem>
-				<SidebarNavItem glyph='icon-simple-line-icons-home' name={__('Job Posts')} href='/admin/job-post' />
-				<SidebarNavItem glyph='icon-fontello-tag-2' name={<span>{__('Tags')}</span>}>
-				 	<SidebarNav>
-				 		<SidebarNavItem name={__('Tags')} href='/admin/tag' />
-				 		<SidebarNavItem name={__('Map Tags')} href='/admin/map-tag' />
-				 		<SidebarNavItem name={__('Tags for approval')} href='/admin/tags-for-approval' />
-					 </SidebarNav>
-				</SidebarNavItem>
-				<SidebarNavItem glyph='icon-simple-line-icons-settings' name={<span>{__('Setting')}</span>}>
-					<SidebarNav>
-						<SidebarNavItem name={__('Role')} href='/admin/role' />
-						<SidebarNavItem name={__('Country')} href='/admin/country' />
-						<SidebarNavItem name={__('State')} href='/admin/state' />
-						<SidebarNavItem name={__('City')} href='/admin/city' />
-						<SidebarNavItem name={__('Commission Settings')} href='/admin/commission-setting' />
-						<SidebarNavItem name={__('Subscription')} href='/admin/subscription' />
-					</SidebarNav>
-				</SidebarNavItem>
-            </SidebarNav>
-		);
+	componentWillUnmount() {
+		$(window).off('resize', this.setHiddenMenuIndex);	
 	}
 }
 
-class DummySidebar extends React.Component {
+@withRouter
+export class SubMenu extends React.Component {
 	render() {
+		let activeMenu = this.props.menus.find(menu => this.props.router.isActive(menu.href));
+		if (!activeMenu || !activeMenu.children) return null;
 		return (
-			<Grid>
-				<Row>
-					<Col xs={12}>
-						<div className='sidebar-header'>DUMMY SIDEBAR</div>
-						<LoremIpsum query='1p' />
-					</Col>
-				</Row>
-			</Grid>
-		);
-	}
-}
-
-@connect(state => ({
-	session: state.session,
-	lang: state.lang,
-	translations: state.translations,
-}))
-export default class SidebarContainer extends React.Component {
-	render() {
-		return (
-			<div id='sidebar'>
-				<div id='avatar'>
-					<Grid>
-						<Row className='fg-white'>
-							<Col xs={12} collapseRight>
-                      			<img style={{top: 0}} src='/imgs/common/logo1.png' alt='PaTeaSt' width='111' height='28' />
-								{/* <ServiceImage
-									src={this.props.session.servicePath + this.props.session.userdetails.user_image}
-									width='40'
-									height='40'
-									className='profile-image'
-								/> */}
-							</Col>
-							<Col xs={8} collapseLeft id='avatar-col'>
-								<div style={{top: 23, fontSize: 16, lineHeight: 1, position: 'relative'}}>
-									{/*this.props.session.userdetails.fullname*/}
-
-								</div>
-							</Col>
-						</Row>
-					</Grid>
-				</div>
-                                { /*
-				<SidebarControls>
-					<SidebarControlBtn bundle='fontello' glyph='docs' sidebar={0} />
-					<SidebarControlBtn bundle='fontello' glyph='chat-1' sidebar={1} />
-					<SidebarControlBtn bundle='fontello' glyph='chart-pie-2' sidebar={2} />
-					<SidebarControlBtn bundle='fontello' glyph='th-list-2' sidebar={3} />
-					<SidebarControlBtn bundle='fontello' glyph='bell-5' sidebar={4} />
-				</SidebarControls>
-                                */ }
-				<div id='sidebar-container'>
-					<Sidebar sidebar={0}>
-						<ApplicationSidebar />
-					</Sidebar>
-					<Sidebar sidebar={1}>
-						<DummySidebar />
-					</Sidebar>
-					<Sidebar sidebar={2}>
-						<DummySidebar />
-					</Sidebar>
-					<Sidebar sidebar={3}>
-						<DummySidebar />
-					</Sidebar>
-					<Sidebar sidebar={4}>
-						<DummySidebar />
-					</Sidebar>
-				</div>
+			<div id='sub-menu'>
+				{
+					activeMenu.children.map(menu =>
+						<Link
+							key={menu.name}
+							className='btn btn-default'
+							activeClassName='btn-primary'
+							to={activeMenu.href + menu.href}>
+							<Text>{menu.name}</Text>
+						</Link>
+					)
+				}
 			</div>
 		);
 	}

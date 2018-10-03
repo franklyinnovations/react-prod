@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>PaTeaSt</title>
+    <meta name="description" content="PaTeaSt">
+    <meta name="author" content="PaTeaSt">
+    <style>
+      table { font-family: "arial", sans-serif;}
+      .p-l-20 {padding-left: 20px;}
+      .p-r-20 {padding-right: 20px;}
+      .p-b-20 {padding-bottom: 20px;}
+      table.timetable { font-size: 14px; font-family: "arial", sans-serif; border-color: #cacaca;}
+      table.timetable thead {}
+      table.timetable thead th { padding: 10px 3px; background: #80b66a; color: #fff; text-transform: uppercase; border-right: 1px solid #ccc;}
+      table.timetable thead th:last-child {border-right: 0px solid #ccc;}
+      table.timetable tbody tr:nth-child(even) { background: #f7f7f7;}
+      table.timetable tbody td { padding: 7px 3px; color: #FFFFFF;}
+      table.timetable tbody td strong { display: block;}
+    </style>
+  </head>
+  <body>
+    <table cellpadding="0" cellspacing="0" width="100%" border-color="#cacaca" border="0" style=" border-collapse: collapse;" align="center">
+      <tbody>
+        <tr>
+          <td align="center">
+            <h3>- <%=__('Timetable')%> -</h3>
+          </td>
+        </tr>
+        <tr>
+          <td class="p-b-20">
+            <table cellpadding="0" cellspacing="0" width="100%" border-color="#cacaca" border="0" style=" border-collapse: collapse;" align="center">
+              <tr>
+                <td align="right" class="p-r-20">
+                  <%=__('Class')%>:- <strong><%=className%></strong>
+                </td>
+                <td align="left" class="p-l-20">
+                  <%=__('Class Teacher')%>:- <strong><%=classTeacher%></strong>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <table cellpadding="0" cellspacing="0" width="100%" border-color="#cacaca" border="1" style=" border-collapse: collapse;" align="center" class="timetable">
+              <thead>
+                <tr>
+                  <%for(var i = 0; i < weekdays.length; i++){%>
+                  <th><%=__(weekdays[i])%></th>
+                  <%}%>
+                </tr>
+                </tr>
+              </thead>
+              <tbody>
+                <%for(var i = 0; i < numRows; i++){ %>
+                <tr>
+                  <%
+                  for(var j = 0; j < weekdays.length; j++){
+                  var item = data[weekdays[j]][i];
+                  %>
+                    <% if (item && item.is_break !== 1) {%>
+                      <td style="background: <%=item.color%>">
+                        <%=
+                          item.start_time ? 
+                          moment(item.start_time, ["HH:mm:ss"]).format("h:mm A") + ' ' + __('To') + ' ' + 
+                          moment(item.end_time, ["HH:mm:ss"]).format("h:mm A") : '-- '+ __('To') + ' --'
+                        %>
+                        <strong><%=item.subject ? item.subject.subjectdetails[0].name : __('N/A')%></strong>
+                        <%=item.teacher ? item.teacher.user.userdetails[0].fullname : __('N/A')%><br>
+                      </td>
+                    <%}else{%>
+                      <td style="color: #000; text-align: center;">
+                        <strong><%=item.tag%></strong>
+                      </td>
+                    <%}%>
+                  <%}%>
+                </tr>
+                <%}%>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
+  </html>

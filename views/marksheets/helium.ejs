@@ -1,0 +1,477 @@
+<%
+const ws = w1 + w2,
+	grade = bcsmap.grade !== null && JSON.parse(bcsmap.grade.data),
+	gradeDefinition = grade ? 
+		grade.map(g => g.grade + '-' + g.start + '-' + g.end).reverse().join(', ') : '',
+	abbreviationsHTML = ((function () {
+		let result = '<div class="abbreviations">';
+		for (var i = 0; i < examheads.length; i++) {
+			result += '<div><span>'
+				+ escapeFn(examheads[i].examheaddetails[0].name)
+				+ '</span> - <b>'
+				+ escapeFn(examheads[i].examheaddetails[0].alias)
+				+ '</b></div>';
+		}
+		return result + '</div>';
+	})());
+
+let markrecordCursor = 0, marksCursor = -1, lastStudentId = 0;
+function getMarks(studentId, subjectId, examheadId) {
+	if (lastStudentId !== studentId)
+		marksCursor = 0;
+	lastStudentId = studentId;
+
+	let mark = marks[marksCursor];
+	if (mark == undefined || (mark.subjectId !== subjectId || mark.examschedule.examheadId !== examheadId))
+		return {label: '-', value: 0, max: 0};
+	marksCursor++;
+	let markrecord = markrecords[markrecordCursor];
+	if (markrecord === undefined || (markrecord.studentId !== studentId || markrecord.markId !== mark.id)) {
+		return {label: '-', value: 0, max: mark.max_mark};
+	}
+	markrecordCursor++;
+	if (markrecord.obtained_mark === null)
+		return {label: 'ML', value: 0, max: mark.max_mark};
+	else
+		return {label: markrecord.obtained_mark, value: markrecord.obtained_mark, max: mark.max_mark};
+}
+
+let activityMarkCursor = -1, activityMarkRecordCursor = 0, lastActivityStudentId = 0;
+function getActivityMarks(studentId, activityId) {
+	if (lastActivityStudentId !== studentId)
+		activityMarkCursor = 0;
+	lastActivityStudentId = studentId;
+	let value = 0, max = 0, activitymark = activitymarks[activityMarkCursor];
+	while (activitymark && activitymark.activityschedule.activityId === activityId) {
+		max += activitymark.activityschedule.max_marks;
+		let activitymarkrecord = activitymarkrecords[activityMarkRecordCursor];
+		if (activitymarkrecord && activitymarkrecord.studentId === studentId && activitymarkrecord.activitymarkId === activitymark.id) {
+			value += activitymarkrecord.obtained_mark;
+			activityMarkRecordCursor++;
+		}
+		activityMarkCursor++;
+		activitymark = activitymarks[activityMarkCursor];
+	}
+	return {value, max};
+}
+
+function getGrade(_obtained_mark, max) {
+	if (!grade) return '';
+	if (max === 0) return '-';
+	let obtained_mark = _obtained_mark * 100;
+	for (let i = 0; i < grade.length; i++) {
+		if (grade[i].start * max <= obtained_mark && obtained_mark < grade[i].end * max) {
+			return grade[i].grade;
+		}
+	}
+	let lastGrade = grade[grade.length - 1];
+	if (lastGrade) {
+		if (obtained_mark === lastGrade.end * max)
+			return lastGrade.grade;
+	}
+	return '';
+}
+%>
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Marksheets</title>
+	<link href="https://fonts.googleapis.com/css?family=Lato:400,900" rel="stylesheet"/>
+<style type="text/css">
+
+* {
+	box-sizing: border-box;
+}
+
+html {
+	font-family: 'Lato', sans-serif;
+	font-size: 3mm;
+}
+
+body {
+	margin: 0;
+	color: black;
+	background-color: white;
+	-webkit-print-color-adjust: exact;
+	-moz-print-color-adjust: exact;
+	-ms-print-color-adjust: exact;
+	-o-print-color-adjust: exact;	
+}
+
+@media screen {
+	body {
+		margin: auto;
+		width: 210mm;
+	}
+
+	.marksheet {
+		height: 297mm;
+	}
+}
+
+.marksheet {
+	width: 100%;
+	padding: 10mm;
+	page-break-after: always;
+}
+
+.institute-name {
+	font-size: 8mm;
+	text-align: center;
+	font-weight: bold;
+	text-transform: uppercase;
+}
+
+.custom-text, .institute-address {
+	font-size: 5mm;
+	text-align: center;
+}
+
+.marksheet-title {
+	font-size: 7mm;
+	text-align: center;
+	font-weight: bold;
+	text-transform: uppercase;
+}
+
+.session {
+	font-size: 5mm;
+	text-align: center;
+}
+
+.student-info {
+	padding: 3mm 2.5mm;
+	border: 0.25mm solid black;
+	margin: 5mm 0;
+}
+
+.student-info > div {
+	float: left;
+	width: 50%;
+}
+
+.student-info > div > span {
+	display: inline-block;
+}
+
+.student-info > div > span:first-child {
+	margin-right: 1mm;
+	font-weight: bold;
+	width: 22mm;
+}
+
+.marks {
+	border-collapse: collapse;
+	width: 100%;
+	margin-left: auto;
+}
+
+.marks td {
+	border: 1px solid black;
+	text-align: center;
+	padding: 5px;
+	font-size: 14px;
+}
+
+.grade-definiton {
+	display: flex;
+	display: -webkit-flex;
+	border-top-width: 0;
+	justify-content: flex-end;
+	-webkit-justify-content: flex-end;
+}
+
+.grade-definiton > span {
+	padding: 10px;
+	display: inline-block;
+	border-bottom: 1px solid black;
+	border-right: 1px solid black;
+}
+
+.grade-definiton > span:first-child {
+	font-weight: bold;
+	border-left: 1px solid black;
+}
+
+
+.activities {
+	display: flex;
+	display: -webkit-flex;
+	-webkit-justify-content: space-between;
+	flex-wrap: wrap;
+	align-items: flex-start;
+}
+
+.activities > div {
+	border: 2px solid black;
+	width: 235px;
+	margin-top: 10px;
+}
+
+.activities > .simple {
+	display: flex;
+	display: -webkit-flex;
+}
+
+.activities > .simple > span {
+	display: inline-block;
+	padding: 10px;
+	font-size: 13px;
+}
+
+.activities > .simple > span:first-child {
+	width: 75%;
+	border-right: 2px solid black;
+}
+
+.activities > .simple > span:last-child {
+	width: 25%;
+	text-align: center;
+}
+
+.activities > .complex > div {
+	display: flex;
+	display: -webkit-flex;
+	border-top: 2px solid black;
+}
+
+.activities > .complex > div:first-child {
+	border-top-width: 0;
+}
+
+.activities > .complex > div > span {
+	display: inline-block;
+	padding: 10px;
+	font-size: 13px;
+}
+
+.activities > .complex > div > span:first-child {
+	width: 75%;
+	border-right: 2px solid black;
+}
+
+.activities > .complex > div > span:last-child {
+	width: 25%;
+	text-align: center;
+}
+
+.activities > .complex > div:first-child > span {
+}
+
+.abbreviations {
+	display: flex;
+	display: -webkit-flex;
+	padding: 10px;
+	margin-top: 10px;
+	font-size: 14px;
+	flex-flow: wrap;
+}
+
+.abbreviations > div {
+	margin-right: 20px;
+}
+
+</style>
+</head>
+<body>
+	<% if (students.length === 0) { -%>
+		<%=__('No students found')%>
+	<% } else { -%>
+		<% for (let i = 0; i < students.length; i++) {
+			let student = students[i], total_1 = 0, max_1 = 0, total_2 = 0, max_2 = 0;
+			for (let k = 0; k < subjects.length; k++) {
+				subjects[k].total_1 = 0;
+				subjects[k].total_2 = 0;
+				subjects[k].max_1 = 0;
+				subjects[k].max_2 = 0;
+			}-%>
+			<div class="marksheet">
+				<div class="institute-name"><%=institute.institutedetails[0].name%></div>
+				<div class="custom-text"><%=customText%></div>
+				<div class="institute-address"><%=institute.institutedetails[0].address%></div>
+				<div class="marksheet-title"><%=__('Report Card')%></div>
+				<div class="session">
+					<%=
+						__(
+							'Session: {{session}}', 
+							{session: siteAdmin.selectedSession.academicsessiondetails[0].name}
+						)
+					%>
+				</div>
+				<div class="student-info">
+					<div>
+						<span><%=__('Student Name')%></span>
+						<span><%=student.user.userdetails[0].fullname%></span>
+					</div>
+					<div>
+						<span><%=__("Father's Name")%></span>
+						<span><%=student.studentdetails[0].father_name%></span>
+					</div>
+					<div>
+						<span><%=__("Mother's Name")%></span>
+						<span><%=student.studentdetails[0].mother_name%></span>
+					</div>
+					<div>
+						<span><%=__('Admission No.')%></span>
+						<span><%=student.enrollment_no%></span>
+					</div>
+					<div style="width: 33.333333%">
+						<span><%=__('Class')%></span>
+						<span><%=bcsmap.name%></span>
+					</div>
+					<div style="width: 33.333333%">
+						<span><%=__('Date Of Birth')%></span>
+						<span><%=moment(student.dob).format(siteAdmin.userdetails.date_format)%></span>
+					</div>
+					<div style="width: 33.333333%">
+						<span><%=__('Roll No.')%></span>
+						<span><%=student.studentrecord.roll_no%></span>
+					</div>
+					<div style="clear: both; float: none;"></div>
+				</div>
+				<table class="marks">
+					<tbody>
+						<tr>
+							<td><%=__('Subjects')%></td>
+							<td></td>
+							<%for (let j = 0; j < subjects.length; j++) {-%>
+							<td><%=subjects[j].subjectdetails[0].name%></td>
+							<%}%>
+							<td><%=__('Total')%></td>
+						</tr>
+						<% for (let k = 0; k < preMidTermExams.length; k++) {
+							let total = 0;%>
+						<tr>
+							<%if(k === 0){%>
+								<td rowspan="<%=preMidTermExams.length%>">
+									<%=__('PRE MID TERM EXAM')%>
+								</td>
+							<%}%>
+							<td><%=examheads[k].examheaddetails[0].alias%></td>
+							<%for (let j = 0; j < subjects.length; j++) {
+								let marks = getMarks(student.id, subjects[j].id, preMidTermExams[k]);
+								total += marks.value;
+								subjects[j].total_1 += marks.value;
+								subjects[j].max_1 += marks.max;-%>
+							<td><%=marks.label%></td>
+							<%}-%>
+							<td><%=total.toFixed(2)%></td>
+						</tr>
+						<% } %>
+						<tr>
+							<td rowspan="2"><%=__('AGGREGATE-1')%></td>
+							<td><%=__('Total')%></td>
+							<%for (let j = 0; j < subjects.length; j++) {
+								total_1 += subjects[j].total_1;
+								max_1 += subjects[j].max_1;-%>
+							<td><%=subjects[j].total_1.toFixed(2)%></td>
+							<%}-%>
+							<td><%=total_1.toFixed(2)%></td>
+						</tr>
+						<tr>
+							<td><%=__('Weighted')%></td>
+							<%for (let j = 0; j < subjects.length; j++) {-%>
+							<td><%=((subjects[j].total_1 * w1) / ws).toFixed(2)%></td>
+							<%}-%>
+							<td><%=((total_1 * w1) / ws).toFixed(2)%></td>
+						</tr>
+						<% for (let k = 0; k < preAnnualExams.length; k++) {
+							let total = 0;%>
+						<tr>
+							<%if(k === 0){%>
+								<td rowspan="<%=preAnnualExams.length%>"><%=__('PRE ANNUAL')%></td>
+							<%}%>
+							<td><%=examheads[k + preMidTermExams.length].examheaddetails[0].alias%></td>
+							<%for (let j = 0; j < subjects.length; j++) {
+								let marks = getMarks(student.id, subjects[j].id, preAnnualExams[k]);
+								total += marks.value;
+								subjects[j].total_2 += marks.value;
+								subjects[j].max_2 += marks.max-%>
+							<td><%=marks.label%></td>
+							<%}-%>
+							<td><%=total.toFixed(2)%></td>
+						</tr>
+						<% }%>
+						<tr>
+							<td rowspan="2"><%=__('AGGREGATE-2')%></td>
+							<td><%=__('Total')%></td>
+							<%for (let j = 0; j < subjects.length; j++) {
+								total_2 += subjects[j].total_2;
+								max_2 += subjects[j].max_2;-%>
+							<td><%=subjects[j].total_2.toFixed(2)%></td>
+							<%}-%>
+							<td><%=total_2.toFixed(2)%></td>
+						</tr>
+						<tr>
+							<td><%=__('Weighted')%></td>
+							<%for (let j = 0; j < subjects.length; j++) {-%>
+							<td><%=((subjects[j].total_2 * w2) / ws).toFixed(2)%></td>
+							<% } -%>
+							<td><%=((total_2 * w2) / ws).toFixed(2)%></td>
+						</tr>
+						<tr>
+							<td rowspan="2"><%=__('Overall')%></td>
+							<td><%=__('Total')%></td>
+							<%for (let j = 0; j < subjects.length; j++) {-%>
+							<td>
+								<%=((subjects[j].total_1 * w1 + subjects[j].total_2 * w2) / ws).toFixed(2)%>
+							</td>
+							<%}-%>
+							<td><%=((total_1 * w1 + total_2 * w2) / ws).toFixed(2)%></td>
+						</tr>
+						<tr>
+							<td><%=__('Grade')%></td>
+							<%for (let j = 0; j < subjects.length; j++) {-%>
+							<td>
+								<%=
+									getGrade(
+										(subjects[j].total_1 * w1 + subjects[j].total_2 * w2),
+										(subjects[j].max_1 * w1 + subjects[j].max_2 * w2)
+									)
+								%>
+							</td>
+							<%}-%>
+							<td><%=getGrade(total_1 * w1 + total_2 * w2, max_1 * w1 + max_2 * w2)%></td>
+						</tr>
+					</tbody>
+				</table>
+				<%if (grade) {%>
+				<div class="grade-definiton">
+					<span><%=__('Grading Scale')%></span>
+					<span><%=gradeDefinition%></span>
+				</div>
+				<div style="clear: both;"></div>
+				<%}%>
+				<div class="activities">
+				<% for (let j = 0; j < activities.length; j++) {
+					let activity = activities[j], mark = getActivityMarks(student.id, activity.id);
+					if (activity.subActivities.length === 0) {-%>
+						<div class="simple">
+							<span><%=activity.activitydetails[0].name%></span>
+							<span><%=getGrade(mark.value, mark.max)%></span>
+						</div>
+					<% } else { -%>
+						<div class="complex">
+							<div>
+								<span><%=activity.activitydetails[0].name%></span>
+								<span><%=__('Grade')%></span>
+							</div>
+							<% for (let k = 0; k < activity.subActivities.length; k++) {
+								let subActivity = activity.subActivities[k],
+									mark = getActivityMarks(student.id, subActivity.id);-%>
+								<div>
+									<span><%=subActivity.activitydetails[0].name%></span>
+									<span><%=getGrade(mark.value, mark.max)%></span>
+								</div>
+							<% } -%>
+						</div>
+					<% } -%>
+				<% } -%>
+				</div>
+				<% if (locals.abbreviations) {-%><%-abbreviationsHTML%><% } -%>
+			</div>
+		<% } %>
+	<% } %>
+<!-- <%-JSON.stringify(locals)%> -->
+</body>
+</html>

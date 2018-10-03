@@ -1,26 +1,16 @@
 import api from '../../api';
 
-const view = 'home';
 export function init() {
-	return dispatch => {
-		
+	return dispatch => api({
+		method: 'get',
+		url: '/session'
+	})
+	.then(({data}) => {
 		dispatch({
-			type: 'LOADING_MODULE',
-			view,
+			type: 'INIT_MODULE',
+			view: 'home',
+			session: data
 		});
-
-		return api({
-			method: 'get',
-			url: '/session'
-		})
-		.then(({data}) => {
-			dispatch({
-				type: 'INIT_MODULE',
-				view: 'home',
-				session: data,
-				stopLoading: true
-			});
-		})
-		.catch(error => console.error)
-	}
+	})
+	.catch(error => console.error)
 }

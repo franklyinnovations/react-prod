@@ -1,52 +1,44 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import classnames from 'classnames';
+import Loading from './Loading';
 
 export default class TextEditor extends React.Component {
-	constructor(props) {
-		super(props);
-		this.state= {
-			content: this.props.value || '',
-		}
-	}
 
-	componentWillReceiveProps(props){
-		this.setState({
-			content: this.props.value
-		});
-	}
-
-	textEditor = el => {
-		$(ReactDOM.findDOMNode(el)).trumbowyg({
-			autogrow: true,
-			dir: $('html').attr('dir'),
-			svgPath:'/imgs/icons.svg',
-			btns: [
-				['viewHTML'],
-				['undo', 'redo'],
-				['formatting'],
-				'btnGrp-semantic',
-				['superscript', 'subscript'],
-				['link'],
-				['insertImage'],
-				'btnGrp-justify',
-				'btnGrp-lists',
-				['horizontalRule'],
-				['removeformat'],
-			]
-		}).on('tbwchange tbwblur tbwpaste', () => {
-			let value = $('#' + this.props.name.replace(/[\[\]]/g, '_')).html();
-			this.props.onChange({
-				target:{
-					name: this.props.name,
-					value
-				}
-			})
-		}).trumbowyg('html', this.state.content);
-	};
+	state = {intialized: false};
+	editorInput = React.createRef();
 
 	render() {
 		return (
-			<div id={this.props.name.replace(/[\[\]]/g, '_')} ref={this.textEditor} className={this.props.className}></div>
+			<React.Fragment>
+				<textarea
+					{...this.props}
+					className={
+						classnames(
+							'trumbowyg-textarea',
+							this.props.className,
+							!this.state.intialized && 'hide'
+						)
+					}
+					ref={this.editorInput}/>
+				{!this.state.intialized && <Loading/>}
+			</React.Fragment>
 		);
+	}
+
+	async componentDidMount() {
+		const [,{default: svgPath}] = await Promise.all([
+			import('trumbowyg'),
+			import('trumbowyg/dist/ui/icons.svg')
+		]);
+
+		$(this.editorInput.current).trumbowyg({
+			svgPath,
+		});
+		this.setState({intialized: true});
+	}
+
+	componentWillUnmount() {
+		if (this.state.intialized)
+			$(this.editorInput.current).trumbowyg('destroy');
 	}
 }

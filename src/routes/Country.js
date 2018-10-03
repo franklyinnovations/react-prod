@@ -1,40 +1,43 @@
 import React from 'react';
+import url from 'url';
 import {connect} from 'react-redux';
-
-import actions from '../redux/actions';
-import Pagination from '../components/Pagination';
-import Loading from '../components/Loading';
-import Select from '../components/Select';
 
 import makeTranslater from '../translate';
 
-import {makeApiData} from '../api';
-
-import {getStatusLabel} from '../utils';
+import {
+	getStatusOptions,
+	getStatusTitle,
+	filtersFromQuery,
+	filterValue,
+	queryFromFilters,
+	moduleActions,
+	getInputValue,
+} from '../utils';
 
 import {
 	Row,
 	Col,
-	Grid,
-	Panel,
-	Table,
-	PanelBody,
-	PanelHeader,
-	PanelContainer,
 	Icon,
+	Text,
+	View,
 	Button,
+	DataTable,
 	Form,
 	FormGroup,
 	ControlLabel,
-	InputGroup,
-	FormControl,
-	Checkbox,
 	HelpBlock,
-} from '@sketchpixy/rubix';
+	Select,
+	Checkbox,
+	FormControl,
+	Loading,
+	Pagination,
+	Modal,
+} from '../components';
 
-import url from 'url';
-
-const viewName = 'country';
+import {addView} from '../redux/reducers/views';
+import reducer from '../redux/reducers/country';
+import * as actions from '../redux/actions/country';
+addView('country', reducer);
 
 @connect(state => ({
 	session: state.session,
@@ -42,347 +45,78 @@ const viewName = 'country';
 	loading: state.view.loading || false,
 	translations: state.translations,
 	lang: state.lang,
-	...state.view.country
+	...state.view.state,
 }))
 export default class Country extends React.Component {
-	constructor(props) {
-		super(props);
+	static fetchData(store){
+		return store.dispatch(actions.init(store.getState()));
+	}
 
-		this.handleDataUpdate = event => {
-			let value;
-			if (event.target.type === 'checkbox')
-				value = event.target.checked;
-			else
-				value = event.target.value;
-			this.updateData(event.target.name, value);
+	permissions = moduleActions(this.props.session.modules, 'country');
+
+	toggleFilters = () => {
+		if (this.props.filters === null) {
+			this.props.dispatch({
+				type: 'SHOW_FILTERS',
+				filters: filtersFromQuery(this.props.query)
+			});
+		} else {
+			this.props.dispatch({
+				type: 'HIDE_FILTERS',
+			});
 		}
+	};
 
-		this.handleEdit = event => {
-			this.edit(event.target.getAttribute('data-item-id'));
-		};
-		this.handleState = event => {
-			this.changeStatus(
-				event.target.getAttribute('data-item-id'),
-				event.target.getAttribute('data-item-status') === '1' ? '0' : '1',
+	updateFilter = event => this.props.dispatch(actions.updateFilter(event));
+
+	search = () => {
+		this.props.dispatch({
+			type: 'SET_QUERY',
+			query: queryFromFilters(this.props.filters),
+		});
+		this.props.router.push(this.props.router.createPath(this.props.router.location.pathname));
+	};
+
+	reset = () => {
+		this.props.dispatch({
+			type: 'SET_QUERY',
+			query: [],
+		});
+		this.props.router.push(this.props.router.createPath(this.props.router.location.pathname));
+	};
+
+	startAdd = () => this.props.dispatch(actions.startAdd(this.props));
+
+	edit = event => this.props.dispatch(
+		actions.edit(
+			this.props,
+			parseInt(event.currentTarget.getAttribute('data-item-id'))
+		)
+	);
+
+	hideDataModal = () => this.props.dispatch({type: 'HIDE_DATA_MODAL'});
+
+	changeStatus = event => {
+		this.props.dispatch(
+			actions.changeStatus(
+				this.props,
+				event.currentTarget.getAttribute('data-item-id'),
+				event.currentTarget.value,
 			)
-		};
-	}
-
-	static fetchData(store) {
-		return store.dispatch(
-			actions.country.init(
-				store.getState()
-			)
 		);
-	}
+	};
 
-	render() {
-		if (this.props.loading) return <Loading/>;
-		let content, __ = makeTranslater(
-			this.props.translations,
-			this.props.lang.code
-		);
-		switch(this.props.viewState) {
-			case 'DATA_FORM':
-				content = this.renderAdd(__);
-				break;
-			default:
-				content = this.renderList(__);
-		}
-		return (
-			<Row>
-				<Col xs={12}>
-					<PanelContainer controls={false} className="overflow-visible">
-						<Panel>
-							<PanelHeader className='bg-green'>
-								<Grid>
-									<Row>
-										<Col xs={4} md={10} className='fg-white'>
-											<h3>{__('Country')}</h3>
-										</Col>
-										<Col xs={8} md={2}>
-											<h3>
-												{this.props.viewState === 'LIST' &&
-												<Button
-													inverse
-													outlined
-													style={{marginBottom: 5}}
-													bsStyle='default'
-													onClick={::this.startAddNew}
-												>
-													{__('Add New')}
-												</Button>}
-												{this.props.viewState === 'DATA_FORM' &&
-												<Button
-													inverse
-													outlined
-													style={{marginBottom: 5}}
-													bsStyle='default'
-													onClick={::this.viewList}
-												>
-													{__('View List')}
-												</Button>}
-											</h3>
-										</Col>
-									</Row>
-								</Grid>
-							</PanelHeader>
-							<PanelBody>
-								<Grid>
-									{content}
-								</Grid>
-							</PanelBody>
-						</Panel>
-					</PanelContainer>
-				</Col>
-			</Row>
-		);
-	}
+	updateData = event => {
+		this.props.dispatch(actions.update(
+			'UPDATE_DATA_VALUE',
+			event.currentTarget.name,
+			getInputValue(event.currentTarget),
+		));
+	};
 
-	renderList(__) {
-		return (
-			<Row key="country-list">
-				<Col xs={12}>
-					<Table condensed striped>
-						<thead>
-							<tr>
-								<th width={'6%'}>{__('S No.')}</th>
-								<th>{__('Name')}</th>
-								<th>{__('ISO code')}</th>
-								<th>{__('Code')}</th>
-								<th>{__('Currency')}</th>
-								<th>{__('Status')}</th>
-								<th width={'9%'}>{__('Actions')}</th>
-							</tr>
-							<tr>
-								<td></td>
-								<td>
-									<FormControl
-										type='text'
-										onChange={this.makeFilter('countrydetail__name')}
-										value={this.props.filter.countrydetail__name || ''}
-										placeholder={__('Name') }
-									/>
-								</td>
-								<td>
-									<FormControl
-										type='text'
-										onChange={this.makeFilter('country__iso_code')}
-										value={this.props.filter.country__iso_code || ''}
-										placeholder={__('ISO Code') }
-									/>
-								</td>
-								<td>
-									<FormControl
-										type='text'
-										onChange={this.makeFilter('country__code')}
-										value={this.props.filter.country__code || ''}
-										placeholder={__('Code') }
-									/>
-								</td>
-								<td>
-									<FormControl
-										type='text'
-										onChange={this.makeFilter('currency__display_name')}
-										value={this.props.filter.currency__display_name || ''}
-										placeholder={__('Name') }
-									/>
-								</td>
-								<td>
-									<FormControl
-										componentClass="select"
-										placeholder="select"
-										onChange={this.makeFilter('country__is_active')}
-										value={this.props.filter.country__is_active || ''}
-									>
-										<option value=''>{__('All')}</option>
-										<option value='1'>{__('Active')}</option>
-										<option value='0'>{__('Inactive')}</option>
-									</FormControl>
-								</td>
-								<td>
-									<Icon
-										className={'fg-darkcyan'}
-										style={{fontSize: 20}}
-										glyph={'icon-feather-search'}
-										onClick={::this.search}
-									/>
-									<Icon
-										className={'fg-brown'}
-										style={{fontSize: 20}}
-										glyph={'icon-feather-reload'}
-										onClick={::this.reset}
-									/>
-								</td>
-							</tr>
-						</thead>
-						<tbody>
-						{this.props.countries.map(this.getDataRow, this)}
-						{this.props.countries.length === 0 && this.getNoDataRow(__)}
-						</tbody>
-					</Table>
-				</Col>
-				<Col xs={12}>
-					<Pagination
-						data={this.props.pageInfo}
-						onSelect={::this.changePage}
-					/>
-				</Col>
-			</Row>
-		);
-	}
+	save = () => this.props.dispatch(actions.save(this.props));
 
-	renderAdd(__) {
-		return (
-			<Row>
-				<Col xs={12} md={8} lg={6}>
-					<Form>
-						<FormGroup
-							controlId='name'
-							validationState={this.props.errors.name ? 'error': null}
-						>
-							<ControlLabel>{__('Name')}</ControlLabel>
-							<FormControl
-								type='text'
-								placeholder={__('Name')}
-								value={this.props.country.name}
-								name='name'
-								onChange={this.handleDataUpdate}
-							/>
-							<HelpBlock>{this.props.errors.name}</HelpBlock>
-						</FormGroup>
-						<FormGroup 
-							controlId="iso_code"
-							validationState={this.props.errors.iso_code ? 'error': null}
-						>
-							<ControlLabel>{__('ISO Code')}</ControlLabel>
-							<Select
-								name="iso_code"
-								onChange={this.handleDataUpdate}
-								value={this.props.country.iso_code}
-								options={this.props.helperData.isoCodes}
-							/>
-							<HelpBlock>{this.props.errors.iso_code}</HelpBlock>
-						</FormGroup>
-						<FormGroup
-							controlId='code'
-							validationState={this.props.errors.code ? 'error': null}
-						>
-							<ControlLabel>{__('Code')}</ControlLabel>
-							<FormControl
-								type='text'
-								placeholder={__('Code')}
-								value={this.props.country.code}
-								name='code'
-								onChange={this.handleDataUpdate}
-							/>
-							<HelpBlock>{this.props.errors.code}</HelpBlock>
-						</FormGroup>
-						<FormGroup
-							controlId='currencyId'
-							validationState={this.props.errors.currencyId ? 'error': null}
-						>
-							<ControlLabel>{__('Currency')}</ControlLabel>
-							<Select
-								name="currencyId"
-								onChange={this.handleDataUpdate}
-								value={this.props.country.currencyId}
-								options={this.props.helperData.currencies}
-							/>
-							<HelpBlock>{this.props.errors.currencyId}</HelpBlock>
-						</FormGroup>
-						<FormGroup controlId='is_active'>
-							<Checkbox
-								name='is_active'
-								onChange={this.handleDataUpdate}
-								checked={this.props.country.is_active}
-								>
-								{__('Active')}
-							</Checkbox>
-						</FormGroup>
-					</Form>
-					<Row>
-						<Col xs={12}>
-							<div>
-								<Button
-									outlined
-									bsStyle='lightgreen'
-									onClick={::this.viewList}>
-									{__('Cancel')}
-								</Button>{' '}
-								<Button
-									outlined
-									bsStyle='lightgreen'
-									onClick={::this.save}>
-									{__('Submit')}
-								</Button>
-							</div>
-							<br/>
-						</Col>
-					</Row>
-				</Col>
-			</Row>
-		)
-	}
-
-	getDataRow(item, index) {
-		let __ = makeTranslater(
-			this.props.translations,
-			this.props.lang.code
-		);
-
-		let count = (this.props.pageInfo.pageLimit * (this.props.pageInfo.currentPage - 1));
-
-		return (
-			<tr key={item.id}>
-				<td>{count + ++index}</td>
-				<td>{item.countrydetails[0].name}</td>
-				<td>{item.iso_code}</td>
-				<td>{item.code}</td>
-				<td>{item.currency.display_name}</td>
-				<td>{__(getStatusLabel(item.is_active, __))}</td>
-				<td>
-					<Icon
-						className={'fg-brown'}
-						style={{fontSize: 20}}
-						glyph={'icon-simple-line-icons-note'}
-						onClick={this.handleEdit}
-						data-item-id={item.id}
-					/>
-					<Icon
-						className={item.is_active === 1 ? 'fg-deepred': 'fg-darkgreen'}
-						style={{fontSize: 20}}
-						glyph={this.getStatusIcon(item.is_active)}
-						onClick={this.handleState}
-						data-item-id={item.id}
-						data-item-status={item.is_active}
-					/>
-				</td>
-			</tr>
-		)
-	}
-
-
-	getStatusIcon(status) {
-		switch(status) {
-			case 0:
-				return 'icon-simple-line-icons-check';
-			case 1:
-				return 'icon-simple-line-icons-close';
-			case -1:
-				return 'icon-fontello-spin4';
-		}
-	}
-
-	getNoDataRow(__) {
-		return (
-			<tr key={0}>
-				<td colSpan={7}>{__('No data found')}</td>
-			</tr>
-		)
-	}
-
-	changePage(page) {
+	changePage = page => {
 		this.props.router.push(
 			url.format({
 				pathname: this.props.location.pathname,
@@ -392,64 +126,270 @@ export default class Country extends React.Component {
 				}
 			})
 		);
-	}
+	};
 
-	makeFilter(name) {
-		let dispatch = this.props.dispatch;
-		return event => {
-			dispatch({
-				type: 'UPDATE_FILTER',
-				name,
-				value: event.target.value
-			});
-		}
-	}
+	render() {
+		if (this.props.loading) return <Loading/>;
+		let __ = makeTranslater(this.props.translations, this.props.lang.code);
 
-	updateData(name, value) {
-		this.props.dispatch({
-			type: 'UPDATE_DATA_VALUE',
-			name,
-			value
-		});
-	}
-
-	search() {
-		this.props.router.push('/admin/country');
-	}
-
-	reset() {
-		this.props.dispatch({
-			type: 'RESET_FILTERS'
-		});
-		this.props.router.push('/admin/country');
-	}
-
-	startAddNew() {
-		this.props.dispatch(actions.country.startAdd(this.props));
-	}
-
-	viewList() {
-		this.props.dispatch(actions.country.viewList())
-	}
-
-	edit(itemId) {
-		this.props.dispatch(actions.country.edit(this.props, itemId));
-	}
-
-	save() {
-		this.props.dispatch(
-			actions.country.save(this.props, this.props.session.id)
+		return (
+			<React.Fragment>
+				<View
+					search={this.props.query}
+					filters={this.renderFilters(__)}
+					actions={this.renderViewActions(__)}>
+					{this.renderData(__)}
+				</View>
+				<Modal
+					backdrop='static'
+					onHide={this.hideDataModal}
+					show={this.props.item !== false}>
+					<Modal.Header closeButton>
+						{
+							this.props.item &&
+							<Modal.Title>
+								{
+									this.props.item.id ?
+									<Text>Edit Country</Text> :
+									<Text>Add Country</Text>
+								}
+							</Modal.Title>
+						}
+					</Modal.Header>
+					<Modal.Body>
+						{this.props.item === null && <Loading/>}
+						{
+							this.props.item &&
+							<Form>
+								<FormGroup
+									controlId='name'
+									validationState={this.props.errors.name ? 'error': null}
+								>
+									<ControlLabel>{__('Name')}</ControlLabel>
+									<FormControl
+										type='text'
+										placeholder={__('Name')}
+										value={this.props.item.name}
+										name='name'
+										onChange={this.updateData}
+									/>
+									<HelpBlock>{this.props.errors.name}</HelpBlock>
+								</FormGroup>	
+								<FormGroup 
+									controlId="iso_code"
+									validationState={this.props.errors.iso_code ? 'error': null}
+								>
+									<ControlLabel>{__('ISO Code')}</ControlLabel>
+									<Select
+										className='form-control'
+										name="iso_code"
+										onChange={this.updateData}
+										value={this.props.item.iso_code}
+										options={this.props.helperData.isoCodes}
+									/>
+									<HelpBlock>{this.props.errors.iso_code}</HelpBlock>
+								</FormGroup>
+								<FormGroup
+									controlId='code'
+									validationState={this.props.errors.code ? 'error': null}
+								>
+									<ControlLabel>{__('Code')}</ControlLabel>
+									<FormControl
+										type='text'
+										placeholder={__('Code')}
+										value={this.props.item.code}
+										name='code'
+										onChange={this.updateData}
+									/>
+									<HelpBlock>{this.props.errors.code}</HelpBlock>
+								</FormGroup>
+								<FormGroup
+									controlId='currencyId'
+									validationState={this.props.errors.currencyId ? 'error': null}
+								>
+									<ControlLabel>{__('Currency')}</ControlLabel>
+									<Select
+										className='form-control'
+										name="currencyId"
+										onChange={this.updateData}
+										value={this.props.item.currencyId}
+										options={this.props.helperData.currencies}
+									/>
+									<HelpBlock>{this.props.errors.currencyId}</HelpBlock>
+								</FormGroup>
+								<Row>
+									<Col xs={6}>
+										<Checkbox
+											name='is_active'
+											onChange={this.updateData}
+											value={this.props.item.is_active}>
+											<ControlLabel><Text>Status</Text></ControlLabel>
+										</Checkbox>
+									</Col>
+									<Col xs={6} className='text-right'>
+										<Button
+											onClick={this.save}
+											bsStyle='primary'>
+											<Text>Submit</Text>
+										</Button>
+									</Col>
+								</Row>
+							</Form>
+						}
+					</Modal.Body>
+				</Modal>
+			</React.Fragment>
 		);
 	}
 
-	changeStatus(itemId, status) {
-		this.props.dispatch(
-			actions.country.changeStatus(
-				this.props,
-				itemId,
-				status
-			)
-		)
+	renderViewActions(__) {
+		return (
+			<View.Actions>
+				{
+					this.permissions.add &&
+					<View.Action onClick={this.startAdd}>
+						<Text>Add New</Text>
+					</View.Action>
+				}
+				<View.Action onClick={this.toggleFilters} title={__('Filters')}>
+					<Icon glyph='fa-filter'/>
+				</View.Action>
+				<View.Action onClick={this.reset} title={__('Reset')}>
+					<Icon glyph='fa-redo-alt'/>
+				</View.Action>
+			</View.Actions>
+		);
+	}
+
+	renderFilters(__) {
+		const filters = this.props.filters;
+		if (filters === null) return false;
+		return (
+			<View.Filters search={this.search} remove={this.toggleFilters}>
+				<FormControl
+					type='text'
+					title={__('Name')}
+					placeholder={__('Name')}
+					name='countrydetail__name'
+					onChange={this.updateFilter}
+					value={filterValue(filters, 'countrydetail__name', '')} />
+				<Select
+					title={__('ISO Code')}
+					placeholder={__('Select ISO Code')}
+					name='country__iso_code'
+					onChange={this.updateFilter}
+					value={filterValue(filters, 'country__iso_code', null)}
+					options={this.props.helperData.isoCodes}/>
+				<FormControl
+					type='text'
+					title={__('Country Code')}
+					placeholder={__('Country Code')}
+					name='country__code'
+					onChange={this.updateFilter}
+					value={filterValue(filters, 'country__code', '')} />
+				<Select
+					title={__('Currency')}
+					placeholder={__('Select Currency')}
+					name='country__currencyId__eq'
+					onChange={this.updateFilter}
+					value={filterValue(filters, 'country__currencyId__eq', null)}
+					options={this.props.helperData.currencies}/>	
+				<Select
+					title={__('Status')}
+					placeholder={__('Select Status')}
+					name='country__is_active'
+					onChange={this.updateFilter}
+					value={filterValue(filters, 'country__is_active', null)}
+					options={getStatusOptions(__)}/>
+			</View.Filters>
+		);
+	}
+
+	renderData(__) {
+		return (
+			<React.Fragment>
+				<DataTable>
+					<thead>
+						<tr>
+							<td className='tw-8'>
+								<Text>Status</Text>
+							</td>
+							<td className='tw-25'>
+								<Text>Name</Text>
+							</td>
+							<td className='tw-15'>
+								<Text>ISO Code</Text>
+							</td>
+							<td className='tw-15'>
+								<Text>Code</Text>
+							</td>
+							<td className='tw-20'>
+								<Text>Currency</Text>
+							</td>
+							<td>
+								<DataTable.ActionColumnHeading/>
+							</td>
+						</tr>
+					</thead>
+					<tbody>
+						{this.renderDataRows(__)}
+					</tbody>
+				</DataTable>
+				<Pagination data={this.props.pageInfo} onSelect={this.changePage}/>
+			</React.Fragment>
+		);
+	}
+
+	renderDataRows(__) {
+		if (this.props.items.length === 0) {
+			return <DataTable.NoDataRow colSpan={5}/>;
+		}
+		return this.props.items.map(item => (
+			<tr key={item.id}>
+				<td className='tw-8'>
+					<Checkbox
+						inline
+						title={getStatusTitle(item.is_active, __)}
+						onChange={this.changeStatus}
+						data-item-id={item.id}
+						data-item-status={item.is_active}
+						disabled={!this.permissions.status}
+						value={item.is_active}/>
+				</td>
+				<td className='tw-25'>
+					{item.countrydetails[0].name}
+				</td>
+				<td className='tw-15'>
+					{item.iso_code}
+				</td>
+				<td className='tw-15'>
+					{item.code}
+				</td>
+				<td className='tw-20'>
+					{item.currency.display_name}
+				</td>
+				<td>
+					<DataTable.Actions id={'item-actions-' + item.id}>
+						{
+							this.permissions.edit &&
+							<DataTable.Action
+								text='Edit'
+								glyph='fa-edit'
+								onClick={this.edit}
+								data-item-id={item.id}/>
+						}
+						{
+							this.permissions.delete &&
+							<DataTable.Action
+								text='Remove'
+								glyph='fa-trash'
+								onClick={this.remove}
+								data-item-id={item.id}/>
+						}
+					</DataTable.Actions>
+				</td>
+			</tr>
+		));
 	}
 }
 

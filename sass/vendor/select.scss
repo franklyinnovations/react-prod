@@ -1,0 +1,38 @@
+$select-input-border-radius: $border-radius-base;
+$select-input-height: 34px;
+$select-input-border-width: 1px;
+$select-item-padding-vertical: 8px;
+$select-item-border-color: rgba(0, 0, 0, 0);
+$select-item-disabled-border-color: rgba(0, 0, 0, 0);
+$select-item-border-radius: 0;
+$select-item-gutter: 0;
+
+@import '~react-select/scss/select';
+@import '~react-select/scss/control';
+@import '~react-select/scss/menu';
+@import '~react-select/scss/mixins';
+@import '~react-select/scss/multi';
+@import '~react-select/scss/spinner';
+
+.Select.form-control {
+	padding: 0;
+	border-width: 0;
+	height: auto;
+}
+
+.has-error .Select > .Select-control {
+	border-color: $state-danger-text;
+}
+
+.Select.is-disabled > .Select-control {
+	background-color: $input-bg-disabled;
+}
+
+.Select-control {
+    table-layout: fixed;
+}
+
+.Select-input {
+	overflow: hidden;
+	max-width: 100%;
+}

@@ -1,64 +1,107 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import moment from 'moment';
+import {connect} from 'react-redux';
+import classnames from 'classnames';
+import Icon from './Icon';
 
-import {
-	Icon,
-	InputGroup,
-	FormControl,
-} from '@sketchpixy/rubix';
+class Datepicker extends React.Component {
 
+	static defaultProps = {
+		format: 'DD/MM/YYYY',
+		valueFormat: 'YYYY-MM-DD',
+	};
 
-export default class Datepicker extends React.Component {
-
-	open = () => $(this.el).focus();
-
-	componentWillReceiveProps(nextProps) {
-		if (nextProps.value !== undefined)
-			$(this.el).data('DateTimePicker').date(nextProps.value);
-	}
+	elRef = React.createRef();
+	open = () => $(this.elRef.current).focus();
 
 	render() {
+		/*eslint no-unused-vars: off*/
+		let {className, name, value, format, valueFormat, time, ...props} = this.props;
+		delete props.onChange, delete props.dispatch, delete props.datepicker;
+		if (time) valueFormat += ' hh:mm A';
 		return (
-			<InputGroup>
-				<FormControl
-					ref={this.gotEl}
-					id={this.props.id}
-					name={this.props.name}
-					className={this.props.className}
-					placeholder={this.props.placeholder}/>
-				<InputGroup.Addon onClick={this.open}>
-					<Icon glyph='icon-fontello-calendar-1'/>
-				</InputGroup.Addon>
-			</InputGroup>
+			<span className='input-group'>
+				<input
+					{...props}
+					ref={this.elRef}
+					className={classnames('form-control', className)}/>
+				<input
+					name={name}
+					type='hidden'
+					value={value ? moment(value, format).format(valueFormat) : ''}/>
+				<span className='input-group-addon' onClick={this.open}>
+					<Icon glyph='fa-calendar-alt'/>
+				</span>
+			</span>
 		);
 	}
 
-	gotEl = (el) => {
-		if(el) {
-			this.el = ReactDOM.findDOMNode(el);
-			$(this.el)
-				.datetimepicker(this.props.datepicker)
-				.on('dp.change', () => {
-					if (this.props.onChange)
-						this.props.onChange({target: this});
-				});
-				if (this.props.value !== undefined)
-					$(this.el).data('DateTimePicker').date(this.props.value);
-		} else {
-			let data = $(this.el).data('DateTimePicker');
-			if (data) data.destroy();
+	async componentDidMount() {
+		await Datepicker.loadPlugin();
+		let datetimepicker = {...this.props.datepicker};
+		if (datetimepicker.format === undefined)
+			datetimepicker.format = this.props.format;
+		if (this.props.time) datetimepicker.format += ' hh:mm A';
+		if (datetimepicker.widgetPositioning === undefined)
+			datetimepicker.widgetPositioning = {
+				horizontal: 'auto',
+				vertical: 'bottom',
+			};
+		$(this.elRef.current).datetimepicker(datetimepicker);
+		if (this.props.value !== undefined)
+			$(this.elRef.current).data('DateTimePicker').date(this.props.value);
+		$(this.elRef.current).on('dp.change', () => {
+			this.props.onChange && this.props.onChange({
+				target: this,
+				currentTarget: this,
+			});
+		});
+	}
+
+	componentDidUpdate() {
+		if (this.value !== this.props.value) {
+			let data = $(this.elRef.current).data('DateTimePicker');
+			data && data.date(this.props.value);
 		}
-	};
+	}
+
+	componentWillUnmount() {
+		let data = $(this.elRef.current).data('DateTimePicker');
+		if (data) data.destroy();
+	}
 
 	get name() {
 		return this.props.name;
 	}
 
 	get value() {
-		return $(this.el).data('DateTimePicker').date();
+		let data = $(this.elRef.current).data('DateTimePicker');
+		if (data)
+			return data.date() && data.date().format(data.format());
+		else
+			return this.props.value;
 	}
 
 	getAttribute(name) {
 		return this.props[name];
 	}
+
+	static async loadPlugin() {
+		await import('eonasdan-bootstrap-datetimepicker');
+		$.fn.datetimepicker.defaults.icons = {
+			time: 'fas fa-clock',
+			date: 'fas fa-calendar',
+			up: 'fas fa-chevron-up',
+			down: 'fas fa-chevron-down',
+			previous: 'fas fa-chevron-left',
+			next: 'fas fa-chevron-right',
+			today: 'fas fa-screenshot',
+			clear: 'fas fa-trash',
+			close: 'fas fa-times'
+		};
+	}
 }
+
+export default connect((state) => ({
+	format: state.session.userdetails ? state.session.userdetails.date_format : undefined,
+}))(Datepicker);

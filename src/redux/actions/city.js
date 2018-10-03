@@ -1,171 +1,155 @@
-import api, {makeErrors, makeApiData} from '../../api';
+import api, {makeApiData, makeErrors} from '../../api';
+import {paramsFromState} from '../../utils';
+export {updateFilter} from './index';
 
 const view = 'city';
 
 export function init(state) {
-	let	params = {
-		...state.location.query
-	};
-	if (state.view && state.view.viewName === view)
-		params = Object.assign(params, state.view.city.filter);
-	return dispatch => {
+	return async dispatch => {
 		dispatch({
 			type: 'LOADING_MODULE',
 			view
 		});
-		return api({
-			params,
-			url: '/admin/city',
+		let {data} = await api({
 			cookies: state.cookies,
 			data: makeApiData(state),
-		})
-		.then(function ({data}) {
-			dispatch({
-				type: 'INIT_MODULE',
-				view,
-				data,
-				stopLoading: true
-			})
-		})
-	}
+			url: '/admin/city',
+			params: paramsFromState(state, view),
+		});
+		
+		dispatch({
+			type: 'INIT_MODULE',
+			view,
+			data,
+		});
+	};
 }
 
 export function startAdd(state) {
-	return dispatch => {
-		dispatch({
-			type: 'LOADING_MODULE',
-			view
-		});
+	return async dispatch => {
+		dispatch({type: 'START_EDIT_CITY'});
 
-		return api({
+		let {data} = await api({
 			data: makeApiData(state),
 			url: '/admin/city/add'
-		})
-		.then(({data}) => {
-			dispatch({
-				type: 'START_ADD_CITY',
-				data,
-				stopLoading: true
-			});
 		});
-	}
-}
-
-export function viewList() {
-	return {
-		type: 'VIEW_CITY_LIST'
-	}
-}
-
-export function save(state, userId) {
-	let data = makeApiData(
-		state,
-		{
-			id: state.item.id,
-			countryId:state.item.countryId,
-			stateId:state.item.stateId,
-			code:state.item.code,
-			alias:state.item.alias,
-			city_detail:
-			{
-				id: state.item.detailId,
-				name: state.item.name
+		
+		dispatch({
+			type: 'START_ADD_CITY',
+			countries: data.countries.map(item => ({
+				value: item.id,
+				label: item.countrydetails[0].name,
+			})),
+			data: {
+				name: '',
+				code: '',
+				alias: '',
+				countryId: null,
+				is_active: true,
+				display_order: '',
 			},
-			userId
-		}
-	);
-	if (state.item.is_active) data.is_active = 1;
-	return dispatch => api({
-		data,
-		url: '/admin/city/save'
-	})
-	.then(({data}) => {
-		if (data.errors)
-			return dispatch({
-				type: 'SET_CITY_ERRORS',
-				errors: makeErrors(data.errors)
-			});
-		if (state.item.id) {
-			dispatch(init(state));
-		} else {
-			state.router.push('/admin/city');
-		}
-	});
-}
-
-export function edit(state, itemId) {
-	let data = makeApiData(
-		state,
-		{
-			id: itemId,
-		}
-	);
-	return dispatch => {
-		dispatch({
-			type: 'LOADING_MODULE',
-			view
 		});
-
-		return api({
-			data: data,
-			url: '/admin/city/edit'
-		})
-		.then(({data}) => {
-			dispatch({
-				type: 'SET_CITY_EDIT_DATA',
-				data,
-				stopLoading: true
-			});
-		});
-	}
-}
-
-export function changeStatus(state, itemId, status) {
-	return dispatch => {
-		dispatch({
-			type: 'CHANGE_ITEM_STATUS',
-			itemId,
-			status: -1
-		});
-
-		return api({
-			data: makeApiData(state),
-			url: '/admin/city/status/' + itemId + '/' + status
-		})
-		.then(({data}) => {
-			dispatch({
-				type: 'CHANGE_ITEM_STATUS',
-				itemId,
-				status
-			});
-		});
-	}
-}
-
-export function updateData(name, value) {
-	return {
-		type: 'UPDATE_CITY_DATA_VALUE',
-		name,
-		value
 	};
 }
 
-export function updateAvailableState(state, countryId) {
-	return dispatch => {
-		dispatch({
-			type: 'LOAD_AVAILABLE_STATE'
+export function save(state) {
+	return async dispatch => {
+		let {data} = await api({
+			url: '/admin/city/save',
+			data: makeApiData(
+				state, {
+					id: state.item.id,
+					alias: state.item.alias,
+					userId: state.session.id,
+					is_active: state.item.is_active,
+					stateId: state.item.stateId || '',
+					countryId: state.item.countryId || '',
+					city_detail: {
+						name: state.item.name,
+						id: state.item.detailId,
+					},
+				}
+			),
 		});
-		api({
-			url: '/admin/state/listByCountryId',
-			data: makeApiData(state, {
-				countryId
-			})
-		})
-		.then(({data}) => {
+		if (data.errors) {
 			dispatch({
-				type: 'SET_AVAILABLE_STATE',
-				data: data.data
-			})
+				type: 'SET_CITY_ERRORS',
+				errors: makeErrors(data.errors)
+			});
+		} else {
+			state.router.push(state.router.location.pathname);
+		}
+	};
+}
+
+export function edit(state, id) {
+	return async dispatch => {
+		dispatch({type: 'START_EDIT_CITY'});
+
+		let {data: {data, countries, states}} = await api({
+			url: '/admin/city/edit',
+			data: makeApiData(state, {id}),
 		});
-	}
+		
+		dispatch({
+			type: 'SET_CITY_EDIT_DATA',
+			data: {
+				id: data.id,
+				alias: data.alias,
+				stateId: data.stateId,
+				countryId: data.countryId,
+				is_active: data.is_active,
+				name: data.citydetails[0].name,
+				detailId: data.citydetails[0].id,
+			},
+			countries: countries.map(item => ({
+				value: item.id,
+				label: item.countrydetails[0].name,
+			})),
+			states: states.map(item => ({
+				value: item.id,
+				label: item.statedetails[0].name,
+			})),
+		});
+	};
+}
+
+export function changeStatus(state, itemId, status, oldstatus) {
+	return async dispatch => {
+		dispatch({
+			type: 'CHANGE_CITY_STATUS',
+			itemId,
+			status: -1,
+		});
+
+		let {data} = await api({
+			data: makeApiData(state),
+			url: '/admin/city/status/' + itemId + '/' + status
+		});
+		
+		dispatch({
+			type: 'CHANGE_CITY_STATUS',
+			itemId,
+			status: data.status ? status : oldstatus,
+		});
+	};
+}
+
+export function changeCountry(state, value) {
+	if (value === null)
+		return {type: 'RESET_STATE_COUNTRY'};
+	return async dispatch => {
+		dispatch({type: 'CHANGING_STATE_COUNTRY', value});
+		let {data: {data}} = await api({
+			url: '/admin/state/listByCountryId',
+			data: makeApiData(state, {countryId: value}),
+		});
+		dispatch({
+			type: 'SET_CITY_STATES',
+			data: data.map(item => ({
+				value: item.id,
+				label: item.statedetails[0].name,
+			})),
+		});
+	};
 }

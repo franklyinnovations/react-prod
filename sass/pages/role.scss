@@ -1,0 +1,36 @@
+.permission-box {
+
+	+ .clearfix {
+		margin-bottom: $form-group-margin-bottom;
+	}
+
+	> div {
+		border: 1px solid $panel-default-border;
+
+		> div {
+
+			> div {
+				padding-top: 0.5em;
+				padding-bottom: 0.5em;
+			}
+
+			> div:nth-child(1) {
+				text-align: center;
+				border-right: 1px solid $panel-default-border;
+			}
+
+			> div:nth-child(2) {
+				text-transform: capitalize;
+			}
+
+			/*model heading*/
+			&:first-child {
+				background-color: $panel-default-heading-bg;
+				border-bottom: 1px solid $panel-default-border;
+				> div:nth-child(2) {
+					text-transform: uppercase;
+				}
+			}
+		}
+	}
+}

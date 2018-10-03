@@ -1,173 +1,181 @@
 import api, {makeErrors, makeApiData} from '../../api';
+import {paramsFromState} from '../../utils';
+export {update, updateFilter} from './index'; 
 
 const view = 'role';
 
-export function init(state) {
-	let	params = {
-		...state.location.query
-	};
-        
-	if (state.view && state.view.viewName === view)
-		params = Object.assign(params, state.view.role.filter);
-	return dispatch => {
+export function init(state){
+	return async dispatch => {
 		dispatch({
 			type: 'LOADING_MODULE',
-			view
+			view,
 		});
-		return api({
-			params,
+		let {data} = await api({
 			url: '/admin/role',
 			cookies: state.cookies,
 			data: makeApiData(state),
-		})
-		.then(function ({data}) {
-			dispatch({
-				type: 'INIT_MODULE',
-				view,
-				data,
-				stopLoading: true
-			})
-		})
-	}
+			params: paramsFromState(state, view),
+		});
+		dispatch({
+			type: 'INIT_MODULE',
+			view,
+			data,
+			stopLoading: true,
+		});
+	};
 }
 
 export function startAdd(state) {
-	let data = makeApiData(
-		state,
-		{
-			userId: state.session.id,
-			roleId: state.session.roleId
-		}
-	);
-	return dispatch => {
+	return async dispatch => {
 		dispatch({
-			type: 'LOADING_MODULE',
-			view
+			type: 'START_ROLE_EDIT',
 		});
 
-		return api({
-			data: data,
+		let {data} = await api({
+			data: makeApiData(state, {
+				userId: state.session.id,
+				roleId: state.session.roleId,
+			}),
 			url: '/admin/role/add'
-		})
-		.then(({data}) => {
-			dispatch({
-				type: 'START_ADD_ROLE',
-				data,
-				userId:state.session.id,
-				stopLoading: true
-			});
 		});
-	}
+		dispatch({
+			type: 'START_ADD_ROLE',
+			permissions: createPermissions(state.session.id === 1, data.permissions),
+		});
+	};
 }
 
-export function viewList() {
+export function hideDataModal() {
 	return {
-		type: 'VIEW_ROLE_LIST'
-	}
+		type: 'HIDE_DATA_MODAL'
+	};
 }
 
-export function save(state, userId) {
-	var permissionIds = [];
-	Object.keys(state.item.rolepermissions).forEach(function(permissions){
-		permissionIds.push(state.item.rolepermissions[permissions]);
-	});
-	permissionIds = [].concat(...permissionIds);
-	let data = makeApiData(
-		state,
-		{
-			id: state.item.id,
-			permissionIds:permissionIds,
-			role_detail:
-			{
-				id: state.item.detailId,
-				name: state.item.name
-			},
-			userId
-		}
-	);
-	if (state.item.is_active) data.is_active = 1;
-	return dispatch => api({
-		data,
-		url: '/admin/role/save'
-	})
-	.then(({data}) => {
-		if (data.errors)
-			return dispatch({
+export function save(state) {
+	return async dispatch => {
+		let {data} = await api({
+			url: '/admin/role/save',
+			data: makeApiData(state, {
+				id: state.item.id,
+				role_detail:{
+					name: state.item.name,
+					id: state.item.detailId,
+					roleId: state.item.id,
+				},
+				userId: state.session.id,
+				is_active: state.item.is_active,
+				permissionIds: Object.keys(state.item.permissionIds),
+			}),
+		});
+
+		if (data.errors) {
+			dispatch({
 				type: 'SET_ROLE_ERRORS',
 				errors: makeErrors(data.errors)
 			});
-		if (state.item.id) {
-			dispatch(init(state));
 		} else {
-			state.router.push('/admin/role');
+			state.router.push('/hrm/role');
 		}
-	});
+	};
 }
 
-export function edit(state, itemId) {
-	let data = makeApiData(
-		state,
-		{
-			id: itemId,
-			userId: state.session.id,
-			roleId: state.session.roleId
-		}
-	);
-	return dispatch => {
+export function edit(state, id) {
+	return async dispatch => {
 		dispatch({
-			type: 'LOADING_MODULE',
+			type: 'START_ROLE_EDIT',
 			view
 		});
 
-		return api({
-			data: data,
+		let {data: {data, permissions}} = await api({
+			data: makeApiData(state, {
+				id,
+				userId: state.session.id,
+				roleId: state.session.roleId,
+			}),
 			url: '/admin/role/edit'
-		})
-		.then(({data}) => {
-			dispatch({
-				type: 'SET_ROLE_EDIT_DATA',
-				data,
-				userId:state.session.id,
-				stopLoading: true
-			});
 		});
-	}
+		dispatch({
+			type: 'SET_ROLE_EDIT_DATA',
+			data: {
+				id: data.id,
+				is_active: data.is_active,
+				name: data.roledetails[0].name,
+				detailId: data.roledetails[0].id,
+				permissionIds: data.rolepermissions.reduce(
+					(obj, {permissionId}) => (obj[permissionId] = true, obj), {}
+				),
+			},
+			permissions: createPermissions(state.session.id === 1, permissions),
+		});
+	};
 }
 
-export function changeStatus(state, itemId, status) {
-	return dispatch => {
+export function changeStatus(state, id, status, oldstatus) {
+	return async dispatch => {
 		dispatch({
-			type: 'CHANGE_ITEM_STATUS',
-			itemId,
+			type: 'CHANGE_ROLE_STATUS',
+			id,
 			status: -1
 		});
 
-		return api({
-			data: makeApiData(state),
-			url: '/admin/role/status/' + itemId + '/' + status
-		})
-		.then(({data}) => {
-			dispatch({
-				type: 'CHANGE_ITEM_STATUS',
-				itemId,
-				status
-			});
+		const {data} = await api({
+			data: makeApiData(state, {
+				id,
+				status,
+			}),
+			url: '/admin/role/status/' + id + '/' + status 
 		});
+		
+		dispatch({
+			type: 'CHANGE_ROLE_STATUS',
+			id,
+			status: data.status ? status : oldstatus
+		});
+	};
+}
+
+export function remove(state, id) {
+	return async dispatch => {
+		dispatch({
+			type: 'START_ROLE_REMOVAL',
+			view
+		});
+
+		let {data: {status}} = await api({
+			data: makeApiData(state, {id}),
+			url: '/admin/role/remove'
+		});
+
+		if (status)
+			state.router.push('/hrm/role');
+
+		dispatch({
+			type: 'ROLE_REMOVAL_FAILED',
+		});
+	};
+}
+
+function createPermissions(superadmin, permissions) {
+	let result = {};
+	for (let i = permissions.length - 1; i >= 0; i--) {
+		let permission = superadmin ? permissions[i] : permissions[i].permission;
+		if (result[permission.model] === undefined) {
+			result[permission.model] = {
+				model: permission.model,
+				display_order: permission.display_order,
+				permissions: [{
+					id: permission.id,
+					action: permission.action,
+				}],
+			};
+		} else {
+			result[permission.model].permissions.push({
+				id: permission.id,
+				action: permission.action,
+			});
+		}
 	}
-}
-
-export function updateData(name, value) {
-	return {
-		type: 'UPDATE_ROLE_DATA_VALUE',
-		name,
-		value
-	};
-}
-
-export function checkedStatus(model, permissions) {
-	return {
-		type: 'UPDATE_ROLE_PERMISSIONS',
-		model,
-		permissions
-	};
+	result = Object.values(result);
+	result.sort((x, y) => x.display_order - y.display_order);
+	return result;
 }

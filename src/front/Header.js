@@ -1,78 +1,126 @@
 import React from 'react';
 import {connect} from 'react-redux';
-import {IndexLink, Link} from 'react-router';
+import {Link, IndexLink} from 'react-router';
+
 import makeTranslater from '../translate';
+import {lanugages} from '../config';
 
 @connect(state => ({
-	session: state.session,
-	location: state.location,
 	translations: state.translations,
-	lang: state.lang
+	lang: state.lang,
+	location: state.location,
+	lanugages: (state.session && state.session.lanugages) || lanugages,
+	logged: state.session && !!state.session.id
 }))
-export default class Header extends React.Component {
+export default class Footer extends React.Component {
+
+	state = {
+		showLanguageLinks: false,
+	};
+
+	showLanguageLinks = () => this.setState({showLanguageLinks: !this.state.showLanguageLinks});
+
 	render() {
-		let __ = makeTranslater(
-			this.props.translations,
-			this.props.lang.code
-		);
+		let _ = makeTranslater(this.props.translations, this.props.lang.code);
+		let viewName = this.props.location.pathname;
 		return (
-			<header className="main-header">
-			    <div className="container">
-					<div className="row">
-						<div className="col-sm-12">
-							<div className="logo">
-								<IndexLink to="/">
-									<img src='/imgs/home/top-logo.png'/>
-								</IndexLink>
-							</div>
-							<nav className="site-nav">
-								<ul className="menu">
-									<li className={this.props.location.pathname === '/about-us' ? 'active':''}>
-										<Link to="/about-us">{__('About')}</Link>
-									</li> 
-									<li className={this.props.location.pathname === '/subscription-plans' ? 'active':''}>
-										<Link to="/subscription-plans">{__('Pricing')}</Link>
-									</li> 
-									<li className={this.props.location.pathname === '/features' ? 'active':''}>
-										<Link to="/features">{__('Features')}</Link>
-									</li>
-									{
-										!this.props.session.id &&
-										<li className={this.props.location.pathname === '/login' ? 'active':''}>
-											<Link to="/login">{__('Login')}</Link>
-										</li>
-									}
-								</ul>
+			<header className='site-header'>
+				<div id="top"/>
+				<div className='logo'>
+					<IndexLink to='/'>
+						<img src='/imgs/front/logo.png'/>
+					</IndexLink>
+				</div>
+				<nav className='site-nav'>
+					<ul className='menu'>
+						<li className={viewName === '/' ? 'active' : ''}>
+							<IndexLink to='/'>{_('Home')}</IndexLink>
+						</li>
+						{' '}
+						<li className={viewName === '/features' ? 'active' : ''}>
+							<Link to='/features'>{_('Features')}</Link>
+						</li>
+						{' '}
+						<li className={(viewName === '/partners' || viewName === '/dealregistration') ? 'active' : ''}>
+							<Link to='/partners'>{_('Partner')}</Link>
+						</li>
+						{' '}
+						<li className={viewName === '/contact-us' ? 'active' : ''}>
+							<Link to="/contact-us">{_('Contact')}</Link>
+						</li>
+						{' '}
+					</ul>
+					{' '}
+					<span className="extra-links">
+						{' '}
+						<Link to='/sign-up' className="free-demo">{_('Register/Sign Up')}</Link>
+						{' '}
+						{
+							this.props.logged ? 
+							<Link to='/dashboard' className="login-btn">{_('Dashboard')}</Link> :
+							<Link to='/login' className="login-btn">{_('Login')}</Link>
+						}
+						{' '}
+						<a
+							href='javascript:void(0)'
+							className="switch-language"
+							onClick={this.showLanguageLinks}>
+							{this.props.lang.code}
+						</a>
+						{' '}
+						{
+							this.state.showLanguageLinks &&
+							<div className='language-links'>
 								{
-									(this.props.session && this.props.session.id) ?
-									<span className="extra-links">
-										<Link to='/login' className="switch-language">{__('Dashboard')}</Link>
-									</span>
-									:
-									<span className="extra-links">
-										<Link to='/login?tab=signup' className="switch-language">{__('Get Started')}</Link>
-									</span>
+									this.props.lanugages.map(
+										lang => (
+											this.props.lang.code !== lang.code &&
+											<a
+												key={lang.id}
+												href={
+													`/setLanguage/${lang.id}/${lang.dir}/${lang.code}`
+												}>
+												{lang.code}
+											</a>
+										)
+									)
 								}
-								<span className="extra-links">
-									{
-										this.props.lang.code === "en" ?
-										<a href="javascript:void(0)" className="switch-language" data-id={2} data-dir={'rl'} data-code={'ar'} onClick={::this.handleLangChange}>ar</a> :
-										<a href="javascript:void(0)" className="switch-language" data-id={1} data-dir={'lr'} data-code={'en'} onClick={::this.handleLangChange}>en</a>		
-									}
-								</span>
-							</nav>
-							<a className="menu-icon"><span/></a>
-						</div>
-					</div>
-				</div> 
+							</div>
+						}
+					</span>
+					{' '}
+				</nav>
+				<span className='menu-icon'><span/></span>
 			</header>
 		);
 	}
+}
 
-	handleLangChange(event) {
-		let elem = event.target;
-		window.location.href = '/setLanguage/' + elem.dataset['id'] 
-			+ '/' + elem.dataset['dir'] 
-			+ '/' + elem.dataset['code'];
-	}
+
+export function Banner({bottom = false, children, students = false, inner = false}) {
+	return (
+		<section className={'banner-section' + (inner ? ' inner-page' : '')}>
+			<span className='banner-top'></span>
+			{bottom && <span className='banner-bottom'></span>}
+			<div className='banner-content'>
+				{children}
+			</div>
+			{
+				students &&
+				<div className='banner-mobile-holder'>
+					<div>
+						<div className="banner-mobile-img">
+							<img src="/imgs/front/banner-mobile.png" alt="" className="img-responsive" />
+						</div>
+						<ul className="banner-students">
+							<li><img src="/imgs/front/child-img-1.png"/></li>
+							<li><img src="/imgs/front/child-img-2.png"/></li>
+							<li><img src="/imgs/front/child-img-3.png"/></li>
+							<li><img src="/imgs/front/child-img-4.png"/></li>
+						</ul>
+					</div>
+				</div>
+			}
+		</section>
+	);
 }

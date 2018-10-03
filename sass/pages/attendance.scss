@@ -1,0 +1,52 @@
+.attendance-input {
+
+	.present {
+		color: $brand-success;
+		border-color: $brand-success;
+	}
+
+	.late {
+		color: $brand-warning;
+		border-color: $brand-warning;
+	}
+
+	.absent {
+		color: $brand-danger;
+		border-color: $brand-danger;
+	}
+
+	> span {
+		display: inline-block;
+		text-align: center;
+		width: 2em;
+		height: 2em;
+		line-height: 2;
+		border-radius: 50%;
+		margin: 0 4px;
+		cursor: pointer;
+		user-select: none;
+		border: 1px solid;
+
+		&.active {
+			color: white;
+			border: none;
+
+			&.present {
+				background-color: $brand-success;
+			}
+
+			&.late {
+				background-color: $brand-warning;
+			}
+
+			&.absent {
+				background-color: $brand-danger;
+			}
+		}
+	}
+}
+
+.att-tags-container > .btn-group {
+	margin-right: $form-group-margin-bottom;
+	margin-top: $form-group-margin-bottom;
+}

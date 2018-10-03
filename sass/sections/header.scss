@@ -1,0 +1,98 @@
+#header {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: $header-height;
+	z-index: 1000;
+	background-color: $brand-primary;
+	color: white;
+
+	> div {
+		> span, > a {
+			user-select: none;
+			color: white;
+			display: inline-block;
+			line-height: $header-height;
+			height: $header-height;
+			min-width: $header-height;
+			text-align: center;
+			vertical-align: top;
+			cursor: pointer;
+
+			&:hover {
+				color: white;
+			}
+
+			img {
+				display: inline-block;
+				max-height: $header-height;
+			}
+
+			i {
+				line-height: $header-height;
+			}
+		}
+	}
+
+	#menu-btn {
+		font-size: 25px;
+		border-right: 1px solid #67BEA5;
+	}
+
+	#logo {
+		width: $sidebar-width;
+		text-align: center;
+		border-right: 1px solid #67BEA5;
+		display: none;
+	}
+
+	#profile-name {
+		display: none;
+		padding: 0 1em;
+	}
+
+	#chat-btn {
+		font-size: 25px;
+		border-left: 1px solid #67BEA5;
+	}
+
+	#session-name {
+		padding: 0 1em;
+		cursor: initial;
+	}
+
+	#settings-btn {
+		border-left: 1px solid #67BEA5;
+		padding: 10px;
+
+		+ .dropdown-menu {
+			z-index: 1001;
+			margin-right: 2px;
+			border-radius: 0;
+			padding-bottom: 0;
+			width: 300px;
+
+			> li.disabled > a {
+				cursor: initial;
+				&:active, &:focus {
+					outline: none;
+				}
+			}
+		}
+	}
+
+	@media(min-width: $screen-sm-min) {
+		#menu-btn {
+			display: none;
+		}
+
+		#logo {
+			display: inline-block;
+		}
+
+		#profile-name {
+			display: inline-block;
+		}
+	}
+}

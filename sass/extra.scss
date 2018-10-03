@@ -1,0 +1,326 @@
+.dashboard-table {
+	.table-striped > tbody > tr:nth-of-type(odd) { background: #f6f6f6;}
+	.table .table { background: none; min-width: 180px}
+	td { text-align: center; font-weight: 600; }
+}
+.dashboard-tab-head { background: #dcedff; padding: 10px 0; margin-bottom: 10px;
+   .form-group { margin: 0; }
+}
+.attendances-popup .modal-lg { width: 1050px; }
+.total-attend { line-height: 34px; }
+.pr  { color: #23a000; }
+.ab { color: #c70000; }
+.late  { color: #f99a00; }
+.total-attend span { margin: 0 20px 0 0;} 
+.total-attend span span { margin: 0; font-weight: 600; }
+
+.attendances-simble span { line-height: 34px; margin: 0 15px 0 0; position: relative; padding: 0 0 0 20px; }
+.attendances-simble span:after { width: 15px; height: 15px; position: absolute; top: 0; left: 0; background:#23a000; content: ""; }
+.attendances-simble span:nth-child(2):after { background: #c70000; }
+.attendances-simble span:nth-child(3):after { background: #f99a00; }
+.dashboard-table .pull-left { width: 75%; }
+.dashboard-table .pull-right { width: 25%; text-align: right;}
+
+.inner-boxes  { background: #dcedff; padding: 6px 15px; margin-bottom: 0;
+.form-group { margin: 0; }
+h4 { margin: 8px 0 0; font-size: 15px; color: #fff;}
+}
+.box-sapret { padding:0 15px 15px; background: #ececec; margin: 0 0 15px; }
+.total-values { margin-bottom: 15px;
+.col-xs-6 { background: #ccc; padding-bottom: 7px; padding-top: 7px; }
+.col-xs-4 { background: #ccc; padding-bottom: 7px; padding-top: 7px; }
+}
+.view-all-btns { margin: 15px -15px -15px; padding: 4px 0; background: #cccccc; }
+.full-boxes  { background: #dcedff; padding: 6px 15px; margin-bottom: 5px;
+.form-group { margin: 0; }
+h4 { margin: 8px 0 0; font-size: 15px; }
+.total-attend { text-align: right }
+}
+
+.att-graph { min-height: 338px; display: block; }
+.fee-graph { min-height: 417px; display: flex; align-items: center; justify-content: center;}
+.dash-onleave { background: orange; border-radius: 3px; padding: 2px 3px;} 
+.proxy-teacher-head span { margin: 0 20px 0 0;} 
+.proxy-teacher-head span span { margin: 0; font-weight: 600; }
+.proxy-tables .alert {margin-bottom: 0px}
+.upcomingproxybox span{margin: 0 5px!important}
+.upcominproxy-teacher-head span { margin: 0;} 
+.upcominproxy-teacher-head span span { margin: 0; font-weight: 600; }
+.proxydate h4{float: left; margin: 10px 15px 0 0; color: #333333}
+.alert-sm {padding: 5px 15px;}
+.tt-info {margin-bottom: 15px;}
+.tt-info .row {border-top: 1px solid #1776da;border-left: 1px solid #1776da; border-bottom: 1px solid #1776da; border-right: 1px solid #1776da;}
+.tt-info .row .form-group {margin-bottom: 0px;}
+
+.tt-info .col-md-3 {
+	border-right: 1px solid #12549a;
+	background: #2471c2; color: #fff; padding: 8px;
+	&:last-child {
+		border-right: none;
+	}
+}
+.tt-info .col-md-6 {
+	border-right: 1px solid #12549a;
+	background: #2471c2; color: #fff; padding: 8px;
+	&:last-child {
+		border-right: none;
+	}
+}
+.shifttimealign {
+	margin-top: 8px;
+}
+
+.icon-primary{color:#2471c2;}
+
+.period-box .text-right i { margin: 0 3px; }
+.color-tt-th { background: #1582d6; }
+.color-tt-td { background: #e7f9ff; }
+.color-tt-br { background: #e8a245; }
+.checkboxselect {margin: 0;}
+.student-popup .modal-lg { width: 1050px; }
+.add-studenat-tab-content .tab-content {     padding: 15px 0;
+    border: 1px solid #ddd;
+    border-top: 0; }
+.add-studenat-tab-content .tab-content button {
+	margin: 0 0 0 5px;
+}
+.subjects-name {
+	font-weight: 700;
+	font-size: 15px;
+	margin-bottom: 15px;
+}
+
+.student-marks-table .complex .col-md-12 .col-md-6:first-of-type {
+	padding-left: 45px;
+	font-size: 13px;
+	padding-top: 5px;
+}
+
+.student-marksinfo {
+	float: right;
+	color: #273135;
+	> .row > div {
+		padding: 15px;
+	}
+}
+
+.student-marks-table .complex input, .student-marksinfo .simple .form-control {
+	border-radius: 20px !important;
+	border: 1px solid #bec1c2;
+	background: #f9f9f9;
+	text-align: center;
+	color: $brand-primary;
+	font-weight: 600;
+	padding: 5px 10px;
+	display: block;
+}
+
+.student-marks-table .rubix-icon {
+	width: 13px;
+	height: 13px;
+	border-radius: 50%;
+	color: #273135;
+	padding: 0;
+}
+
+.student-subject-tags span {
+	background: #d2dbe2;
+	margin: 0 2px;
+	padding: 4px;
+	color: #273135;
+	font-size: 13px;
+	border-radius: 3px;
+}
+
+.student-marks-table span .delete-tag {
+	border: 0;
+	font-weight: 600;
+	font-size: 12px;
+	vertical-align: inherit;
+	margin-left: 4px;
+}
+
+.student-profileinfo {
+	background: #2471c2;
+	color: #fff;
+	text-align: center;
+	padding: 20px 10px;
+	border-bottom-left-radius: 4px;
+	border-top-left-radius: 4px;
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 100%;
+	font-size: 16px;
+}
+
+.student-profileinfo > div:first-of-type {
+	width: 80px;
+	height: 80px;
+	border-radius: 50%;
+	padding: 0;
+	overflow: hidden;
+	margin: 0 auto 10px;
+	border: 2px solid #fff;
+}
+
+.student-profileinfo > div:first-of-type img {
+	width: 100%;
+	height: 100%;
+
+}
+
+.student-marks-table > .row {
+	background: rgb(255, 255, 255);
+	margin-bottom: 10px;
+	margin-left: 0;
+	margin-right: 0;
+	position: relative;
+	min-height: 175px;
+	border-radius: 4px;
+	box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.student-marksinfo .simple {
+	.input-group .input-group-addon {
+		background: none !important;
+		padding: 0;
+		i {
+			color: black;
+			margin-left: 6px;
+		}
+	}
+}
+
+.sub-cat:after {
+	content: '';
+	background: #93989a;
+	display: block;
+	width: 1px;
+	height: 100%;
+	top: 0;
+	position: absolute;
+	left: 30px;
+}
+
+.sub-cat:before {
+	content: '';
+	background: #273135;
+	display: block;
+	width: 8px;
+	height: 8px;
+	top: -5px;
+	left: 27px;
+	position: absolute;
+	border-radius: 50%;
+	z-index: 1;
+}
+
+.sub-cats {
+	position: relative;
+}
+
+.sub-cats:before {
+	content: '';
+	display: block;
+	width: 10px;
+	height: 1px;
+	background: #93989a;
+	left: 30px;
+	position: absolute;
+	top: 14px;;
+}
+.tag-btn-container > button {
+	margin: 5px;
+}
+
+.tag-btn-container > .btn-group {
+	margin: 5px;
+}
+.period-detail span{	
+	font-size: 13px;
+}
+
+
+/* Check box Base for label styling */
+.pateast-tables [type="checkbox"]:not(:checked),
+.pateast-tables [type="checkbox"]:checked {
+  position: absolute;
+  left: -9999px;
+}
+.pateast-tables [type="checkbox"]:not(:checked) + label,
+.pateast-tables [type="checkbox"]:checked + label {
+  position: relative;
+  padding-left: 20px;
+  cursor: pointer;
+  font-size: 15px; line-height:20px ; color: #333333; margin: 0; font-weight: normal;
+}
+/* checkbox aspect */
+.pateast-tables [type="checkbox"]:not(:checked) + label:before,
+.pateast-tables [type="checkbox"]:checked + label:before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0;
+  width: 20px; height: 20px;  
+  background: url("/imgs/admin/check-off.jpg") 0 0 no-repeat;
+  border-radius: 0px;  
+}
+/* checked mark aspect */
+.pateast-tables [type="checkbox"]:not(:checked) + label:after,
+.pateast-tables [type="checkbox"]:checked + label:after {
+  content: '';
+  position: absolute;
+  left: 0; top: 0;
+  width: 20px; height: 20px;  
+  background: url("/imgs/admin/checked.png") 0 0 no-repeat;
+  border-radius: 0px;  
+}
+/* checked mark aspect changes */
+.pateast-tables [type="checkbox"]:not(:checked) + label:after {
+  opacity: 0;
+  transform: scale(0);
+}
+.pateast-tables [type="checkbox"]:checked + label:after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+
+.pateast-tables { margin: 20px 0;} 
+.pateast-tables tr th { vertical-align: middle !important; text-align: center; color: #fff; border-bottom: 0 !important; border-top: 1px solid #e2a73e !important; border-color: #e2a73e !important; padding: 0 !important; background: #f8ba4d;   }
+.pateast-tables tr th i  { margin: 0 5px; }
+.pateast-tables tr th:nth-child(1) { width: 225px; border-left-color: #5d844d !important;}
+.pateast-tables tr td:first-child { background: #80b66a; border-color: #5d844d; color: #fff; text-align: left; }
+.pateast-tables tr td:first-child b { margin-right: 10px; }
+.pateast-tables tr td:first-child i { float: right; margin: 0 0 0 10px;}
+.class-section { display: block; }
+.class-section div { display: inline-block;  padding:15px 10px; width: 112px; }
+.sec { color: #fff; background: #f8ba4d; }
+.classs { color: #fff; background: #80b66a; }
+.c-check { display: inline-block; margin: 0 5px 0 0; margin-left: calc(50% - 0.75em); }
+.pateast-tables tr td { text-align: left; padding: 10px 8px; }
+
+.pateast-edit-tables tr td { vertical-align: top !important; text-align: left; font-size: 14px;}
+.pateast-edit-tables tr td.breaktt {vertical-align: middle !important; }
+.pateast-edit-tables tr td:nth-child(1){ vertical-align: middle !important; text-align: center; font-size: 15px; font-weight: bold; width: 120px;}
+.pateast-edit-tables .text-right { line-height: 14px; }
+.pateast-edit-tables tr td:hover { background: #e2a73e; color: #fff; }
+
+
+/* Check box Base for label styling timetable*/
+.pateast-tables-tt { margin: 0;} 
+.pateast-tables-tt tr th { vertical-align: middle !important; text-align: center; color: #fff; border-bottom: 0 !important; border-top: 1px solid #e2a73e !important; border-color: #e2a73e !important; padding: 0 !important; background: #f8ba4d;   }
+.pateast-tables-tt tr th i  { margin: 0 5px; }
+.pateast-tables-tt tr th:nth-child(1) { width: 225px; border-left-color: #5d844d !important;}
+.pateast-tables-tt tr:first-child, .weekly-schedule tr:first-child { background: #80b66a; border-color: #5d844d; color: #fff; text-align: left; }
+.pateast-tables-tt tr:first-child b { margin-right: 10px; }
+.pateast-tables-tt tr:first-child i { float: right; margin: 0 0 0 10px;}
+.pateast-tables-tt tr td { text-align: left; padding: 10px 8px; }
+
+.pateast-edit-tables-tt tr td { vertical-align: top !important; text-align: left; font-size: 14px;}
+.pateast-edit-tables-tt tr td.breaktt {vertical-align: middle !important; }
+.pateast-edit-tables-tt tr:nth-child(1){ vertical-align: middle !important; text-align: center; font-size: 15px; font-weight: bold; width: 120px;}
+.pateast-edit-tables-tt .text-right { line-height: 14px; }
+.pateast-edit-tables-tt tr td:hover { background: #e2a73e !important; color: #fff; }
+.ml-2 {margin-left: 2px}
+.timetable-icon {font-size: 20px; margin-right: 5px;}

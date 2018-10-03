@@ -1,0 +1,261 @@
+<%
+let grade = JSON.parse(bcsmap.grade.data),
+	passed = new Map(),
+	gradeCounts = new Map(),
+	totalStudent = students.length;
+
+for (let i = students.length - 1; i >= 0; i--) {
+	let student = students[i],
+		markrecords = student.markrecords;
+	for (let j = markrecords.length - 1; j >= 0; j--) {
+		let markrecord = markrecords[j],
+			mark = markrecord.mark;
+		if (mark.min_passing_mark <= markrecord.obtained_mark) {
+			passed.set(mark.subjectId, (passed.get(mark.subjectId) || 0) + 1);
+		}
+
+		let gradeValue = getGrade(markrecord.obtained_mark, mark.max_mark);
+		if (gradeValue) {
+			let gradeCount = gradeCounts.get(mark.subjectId);
+			if (gradeCount === undefined)
+				gradeCounts.set(mark.subjectId, gradeCount = getIntialGrade());
+			gradeCount.set(gradeValue, gradeCount.get(gradeValue) + 1);
+		}
+	}
+}
+
+function getIntialGrade() {
+	let gradeCounts = new Map;
+	for (let i = grade.length - 1; i >= 0; i--) {
+		gradeCounts.set(grade[i].grade, 0);
+	}
+	return gradeCounts;
+}
+
+function getGrade(_obtained_mark, max) {
+	if (max === 0) return false;
+	let obtained_mark = _obtained_mark * 100;
+	for (let i = 0; i < grade.length; i++) {
+		if (grade[i].start * max <= obtained_mark && obtained_mark < grade[i].end * max) {
+			return grade[i].grade;
+		}
+	}
+	let lastGrade = grade[grade.length - 1];
+	if (lastGrade) {
+		if (obtained_mark === lastGrade.end * max)
+			return lastGrade.grade;
+	}
+	return false;
+}
+
+function percentage(value, max) {
+	if (!max || !value) return '-';
+	return ((value * 100) / max).toFixed(2);
+}
+
+%>
+
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<title><%=__('Teacher Performance')%></title>
+	<link href="https://fonts.googleapis.com/css?family=Lato:400,900" rel="stylesheet"/>
+<style type="text/css">
+* {
+	box-sizing: border-box;
+	-webkit-box-sizing: border-box;	
+}
+
+html {
+	font-family: 'Lato', sans-serif;
+	font-size: 4mm;
+}
+
+body {
+	margin: auto;
+	padding: 5mm;
+	width: 297mm;
+	color: black;
+	background-color: white;
+	-webkit-print-color-adjust: exact;
+	-moz-print-color-adjust: exact;
+	-ms-print-color-adjust: exact;
+	-o-print-color-adjust: exact;
+}
+
+.institute-name {
+	font-weight: bold;
+	font-size: 2.5em;
+	text-align: center; 
+}
+
+.institute-tag-line {
+	font-size: 1.5em;
+	text-align: center; 
+}
+
+.institute-address {
+	text-align: center;
+}
+
+.title {
+	font-size: 1.5em;
+	text-align: center;
+}
+
+.session-name {
+	text-align: center;
+}
+
+.details {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 1em;
+}
+
+.details > div {
+	display: inline-block;
+}
+
+.details > div > span {
+	display: inline-block;
+}
+
+.details > div > span:first-child {
+	font-weight: bold;
+	margin-right: 0.5em;
+}
+
+table {
+	width: 100%;
+	text-align: center;
+	border-collapse: collapse;
+}
+
+th {
+	font-weight: bold;
+}
+
+td, th {
+	border: 1px solid black;
+}
+
+.signatures {
+	display: flex;
+	display: -webkit-flex;
+	-webkit-justify-content: space-between;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	align-items: flex-start;
+}
+
+.signatures > div {
+	min-width: 16em;
+	text-align: center;
+}
+
+.signatures > div > div:first-child{
+	height: 1px;
+	background-color: #000000;
+	margin-top: 3em;
+	margin-bottom: 1em;
+}
+
+.signatures > div > div:last-child{
+	text-align: center;
+	font-size: 1.4em;
+	font-weight: bold;
+}
+
+.print-btn {
+	margin-top: 1em;
+	text-align: right;
+}
+
+@media print {
+	.print-btn {
+		display: none;
+	}
+}
+
+
+</style>
+</head>
+<body>
+	<div class="institute-name"><%=institute.institutedetails[0].name%></div>
+	<div class="institute-tag-line"><%=institute.institutedetails[0].tagline%></div>
+	<div class="institute-address"><%=institute.institutedetails[0].address%></div>
+	<div class="title"><%=__('CLASS WISE RESULT ANALYSIS')%></div>
+	<div class="session-name"><%=siteAdmin.selectedSession.academicsessiondetails[0].name%></div>
+	<div class="details">
+		<div>
+			<span><%=__('Class')%></span>
+			<span><%=bcsmap.class.classesdetails[0].name%></span>
+		</div>
+		<div>
+			<span><%=__('Section')%></span>
+			<span><%=bcsmap.section.sectiondetails[0].name%></span>
+		</div>
+		<div>
+			<span><%=__('Total Students')%></span>
+			<span><%=totalStudent%></span>
+		</div>
+	</div>
+	<table>
+		<thead>
+			<tr>
+				<th rowspan="2"><%=__('Subject')%></th>
+				<th rowspan="2"><%=__('Total Marks')%></th>
+				<th rowspan="2"><%=__('Total Passed')%></th>
+				<th rowspan="2"><%=__('Total Failed')%></th>
+				<th colspan="<%=grade.length%>"><%=('Number of students')%></th>
+				<th rowspan="2"><%=__('Passed %')%></th>
+				<th rowspan="2"><%=__('Teacher')%></th>
+				<th rowspan="2"><%=__('Signature')%></th>
+			</tr>
+			<tr>
+				<%for (let i = grade.length - 1; i >= 0; i--) {%>
+				<td>
+					<div><%=grade[i].grade%></div>
+					<div><small><%=grade[i].start%> - <%=grade[i].end%></small></div>
+				</td>
+				<%}%>
+			</tr>
+		</thead>
+		<tbody>
+			<%timetableallocations.forEach(timetableallocation => {
+				let gradeCount = gradeCounts.get(timetableallocation.subject.id);%>
+			<tr>
+				<td><%=timetableallocation.subject.subjectdetails[0].name%></td>
+				<td><%=timetableallocation.subject.max_mark%></td>
+				<td><%=passed.get(timetableallocation.subject.id) || '-'%></td>
+				<td><%=(totalStudent - (passed.get(timetableallocation.subject.id) || 0)) || '-'%></td>
+				<%for (let i = grade.length - 1; i >= 0; i--) {%>
+				<td><%=(gradeCount && gradeCount.get(grade[i].grade)) || '-'%></td>
+				<%}%>
+				<td>
+					<%=
+						percentage(
+							passed.get(timetableallocation.subject.id),
+							totalStudent
+						)
+					-%>
+				</td>
+				<td><%=timetableallocation.teacher.user.userdetails[0].fullname%></td>
+				<td></td>
+			</tr>
+			<%})%>
+		</tbody>
+	</table>
+	<div class="signatures">
+		<div>
+			<div></div>
+			<div><%=__('Principal')%></div>
+		</div>
+	</div>
+	<div class="print-btn">
+		<button onclick="window.print()"><%=__('Print')%></button>
+	</div>
+</body>
+</html>

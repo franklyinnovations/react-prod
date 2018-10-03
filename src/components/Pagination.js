@@ -1,41 +1,49 @@
 import React from 'react';
-import {
-	Row,
-	Col,
-	Pagination,
-} from '@sketchpixy/rubix';
+import BPagination, {Item, Prev, Next, First, Last, Ellipsis} from 'react-bootstrap/lib/Pagination';
+import Text from './Text';
 
-export default function RootPagination({data, onSelect}) {
-	let start = data.totalData === 0 ? 0 : (data.currentPage - 1) * data.pageLimit + 1,
-		end = Math.min(data.totalData, data.currentPage * data.pageLimit);
+export default function Pagination ({data, onSelect}) {
+	if (data.totalData === 0) return null;
+	let	currentPage = parseInt(data.currentPage),
+		pageCount = data.pageCount,
+		total = data.totalData,
+		start = (currentPage - 1) * data.pageLimit + 1,
+		end = Math.min(total, currentPage * data.pageLimit);
 	return (
-		<Row>
-			<Col xs={12} md={6}>
-				{
-					data.totalData !== 0 &&
-					<div className="pagination-count-info">
-						Showing {start} to {end} out of {data.totalData}
-					</div>
-				}
-			</Col>
-			<Col xs={12} md={6}>
-				{data.pageCount > 1 &&
-					<div className="text-right">
-						<Pagination
-							prev
-							next
-							first
-							last
-							ellipsis
-							boundaryLinks
-							activePage={data.currentPage}
-							items={data.pageCount}
-							maxButtons={4}
-							onSelect={onSelect}
-						/>
-					</div>
-				}
-			</Col>
-		</Row>
+		<div className="pagination-container">
+			<div>
+				<Text options={{start, end, total}}>Showing [[start]] to [[end]] out of [[total]]</Text>
+			</div>
+			{
+				data.pageCount > 1 &&
+				<BPagination>
+					{
+						currentPage > 1 &&
+						<React.Fragment>
+							<First onClick={() => onSelect(1)}/>
+							<Prev disabled={currentPage === 1} onClick={() => onSelect(currentPage - 1)}/>
+						</React.Fragment>
+					}
+					{currentPage > 2 && <Ellipsis/>}
+					{
+						currentPage > 1 &&
+						<Item onClick={() => onSelect(currentPage - 1)}>{currentPage - 1}</Item>
+					}
+					<Item active>{currentPage}</Item>
+					{
+						currentPage < pageCount &&
+						<Item onClick={() => onSelect(currentPage + 1)}>{currentPage + 1}</Item>
+					}
+					{(currentPage < (pageCount - 1)) && <Ellipsis/>}
+					{
+						currentPage < pageCount &&
+						<React.Fragment>
+							<Next onClick={() => onSelect(currentPage + 1)}/>
+							<Last onClick={() => onSelect(pageCount)}/>
+						</React.Fragment>
+					}
+				</BPagination>
+			}
+		</div>
 	);
 }

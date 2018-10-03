@@ -1,0 +1,99 @@
+#bcsmap-table {
+
+	> div {
+		flex: 1;
+		border-top: 1px solid $table-border-color;
+		border-left: 1px solid $table-border-color;
+
+		> div {
+			display: flex;
+			&:first-child {
+				> div {
+					background-color: #d9edf7;
+				}
+			}
+
+			> div {
+				flex: 1;
+				position: relative;
+				border-bottom: 1px solid $table-border-color;
+				border-right: 1px solid $table-border-color;
+				height: 3.5em;
+				display: flex;
+				align-items: center;
+
+				&:first-child {
+					background-color: #E9F0F5;
+					min-width: 11em;
+				}
+
+				> b {
+					width: 2em;
+					padding: 0 0.5em;
+					text-align: center;
+					line-height: 3.45em;
+					background-color: #E9F0F5;
+				}
+
+				> i {
+					margin: 0 0.5em;
+				}
+
+				> div {
+					padding: 0 0.5em;
+				}
+
+				> span {
+					flex: 1;
+					padding: 0 0.5em;
+				}
+
+				> input {
+					margin: 0;
+					height: 1.5em;
+					width: 1.5em;
+					margin-left: calc(50% - 0.75em);
+				}
+
+				> .checkbox-inline {
+					font-size: 1.5em;
+				}
+			}
+		}
+	}
+
+	> div:first-child > div:first-child > div:first-child{
+		background-color: white;
+	}
+
+	.class-section {
+		flex: 1;
+		padding: 0;
+		display: flex;
+		justify-content: space-between;
+		align-self: stretch;
+		font-weight: bold;
+
+		> div {
+			flex: 1;
+			display: flex;
+			align-items: center;
+
+			> i {
+				padding: 0.25em;
+			}
+
+			&:nth-child(1) {
+				background-color: #E9F0F5;
+				text-align: left;
+				justify-content: flex-start;
+			}
+
+			&:nth-child(2) {
+				background-color: #d9edf7;
+				text-align: right;
+				justify-content: flex-end;
+			}
+		}
+	}
+}

@@ -1,128 +1,96 @@
-import api, {makeErrors, makeApiData} from '../../api';
+import api, {makeApiData, makeErrors} from '../../api';
+import {paramsFromState} from '../../utils';
+export {updateFilter} from './index';
 
 const view = 'tag';
 
 export function init(state){
-	let params = {
-		...state.location.query
-	}
-	if(state.view && state.view.viewName == view)
-		params = Object.assign(params, state.view.tag.filter);
-
-	return dispatch => {
+	return async dispatch => {
 		dispatch({
 			type: 'LOADING_MODULE',
-			view
+			view,
 		});
-		return api({
-			params,
+		const {data} = await api({
 			url: '/admin/tag',
 			cookies: state.cookies,
 			data: makeApiData(state),
-		}).then(function({data}) {
-			dispatch({
-				type: 'INIT_MODULE',
-				view,
-				data,
-				stopLoading: true
-			})
-		})
-	}
-}
-
-export function startAdd() {
-	return {
-		type: 'START_ADD_TAG'
-	}
-}
-
-export function viewList() {
-	return {
-		type: 'VIEW_LIST'
-	}
-}
-
-export function save(state, userId) {
-	let data = makeApiData(
-		state,
-		{
-			id: state.tag.id,
-			tagdetail:
-			{
-				title: state.tag.title,
-				description: state.tag.description,
-				id: state.tag.detailId
-			},
-			is_approved: 1,
-			userId
-		}
-	);
-
-	data.tagtypeId = state.tag.tagtypeId;
-
-	return dispatch => {
-		dispatch({
-			type: 'SEND_ADD_TAG_REQUEST',
+			params: paramsFromState(state, view),
 		});
-		return api({
+		dispatch({
+			type: 'INIT_MODULE',
+			view,
 			data,
-			url: '/admin/tag/save'
-		})
-		.then(({data}) => {
-			if (data.errors)
-				return dispatch({
-					type: 'SET_TAG_SAVE_ERRORS',
-					errors: makeErrors(data.errors)
-				});
-			if (state.tag.id) {
-				dispatch(init(state));
-			} else {
-                state.router.push('/admin/tag');
-			}
 		});
-	}
+	};
 }
 
-export function edit(state, itemId) {
-
-
-	return dispatch => {
-		dispatch({
-			type: 'LOADING_MODULE',
-			view
+export function save(state) {
+	return async dispatch => {
+		dispatch({type: 'SEND_ADD_TAG_REQUEST'});
+		let {data} = await api({
+			url: '/admin/tag/save',
+			data: makeApiData(state, {
+				id: state.item.id,
+				userId: state.session.id,
+				tagdetail: {
+					id: state.item.detailId,
+					title: state.item.title,
+					description: state.item.description,
+				},
+				type: state.item.id ? undefined : (state.item.type || ''),
+				is_active: state.item.is_active,
+			}),
 		});
-
-		return api({
-			data: makeApiData(state),
-			url: '/admin/tag/edit/' + itemId
-		})
-		.then(({data}) => {
+		if (data.errors) {
 			dispatch({
-				type: 'SET_TAG_EDIT_DATA',
-				data,
-				stopLoading: true
+				type: 'SET_TAG_SAVE_ERRORS',
+				errors: makeErrors(data.errors),
 			});
-		});
-	}
+		} else {
+			state.router.push('/general/tag');
+		}
+	};
 }
-export function changeStatus(state, itemId, status) {
-	return dispatch => {
+
+export function edit(state, id) {
+	return async dispatch => {
+		dispatch({type: 'LOADING_TAG_EDIT_DATA'});
+		let {data} = await api({
+			data: makeApiData(state),
+			url: '/admin/tag/edit/' + id
+		});
+		dispatch({
+			type: 'SET_TAG_EDIT_DATA',
+			data: {
+				id: data.id,
+				is_active: data.is_active,
+				type: data.type,
+				title: data.tagdetails[0].title,
+				detailId: data.tagdetails[0].id,
+				description: data.tagdetails[0].description,
+			},
+		});
+	};
+}
+
+export function changeStatus(state, itemId, status, oldstatus) {
+	return async dispatch => {
 		dispatch({
 			type: 'CHANGE_ITEM_STATUS',
 			itemId,
 			status: -1
 		});
 
-		return api({
+		let {data} = await api({
 			data: makeApiData(state),
 			url: '/admin/tag/status/' + itemId + '/' + status
-		})
-		.then(({data}) => {
-			dispatch({
-				type: 'CHANGE_ITEM_STATUS',
-				itemId,
-				status
-			});
 		});
-	}
+
+		dispatch({
+			type: 'CHANGE_ITEM_STATUS',
+			itemId,
+			status: data.status ? status : oldstatus
+		});
+	};
 }
+

@@ -1,0 +1,50 @@
+@media (max-width: 480px){
+    .container{
+        padding-bottom:210px;
+    }
+
+	body {
+    	background-color: #fff;
+    	height:300px;
+	}
+}
+
+@media (min-width: 480px){
+    .content{
+        width: 300px;
+        margin: 80px auto;
+    }
+    body{
+        background: linear-gradient(to bottom, #656565 0%,#656565 100%) !important;
+    }
+}
+
+.content{
+    background-color: #fff;
+    border-radius: 6px
+}
+
+.header{
+    text-align: center;
+    padding: 15px;
+}
+
+.pagebody{
+    text-align: center;
+    font-size: 16px;
+    padding: 10px;
+}
+
+.page{
+    font-size: 18px;
+    padding-bottom: 30px;
+    font-family: sans-serif;
+}
+
+.fluid-container{
+    height: 270px;
+}
+
+.google_store{
+    padding-top: 20px;
+}

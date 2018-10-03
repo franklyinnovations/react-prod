@@ -1,0 +1,510 @@
+<%
+const grade = bcsmap.grade !== null && JSON.parse(bcsmap.grade.data),
+	gradeDefinition = grade ? 
+		grade.map(g => g.grade + '-' + g.start + '-' + g.end).reverse().join(', ') : '',
+		abbreviationsHTML = ((function () {
+			let result = '<div class="abbreviations">';
+			let examheads = new Map();
+			for (let i = subjectExams.length - 1; i >= 0; i--) {
+				examheads.set(subjectExams[i].id, subjectExams[i]);
+			}
+			for (let i = activityExams.length - 1; i >= 0; i--) {
+				examheads.set(activityExams[i].id, activityExams[i]);
+			}
+			for ([,examhead] of examheads) {
+				result += '<b>'
+					+ escapeFn(examhead.examheaddetails[0].alias)
+					+ '</b> - <span>'
+					+ escapeFn(examhead.examheaddetails[0].name)
+					+ '</span> ';
+			}
+			return result + '</div>';
+		})()),
+	classTeacherSignature = bcsmap.timetables.length &&
+		bcsmap.timetables[0].teacher &&
+		bcsmap.timetables[0].teacher.user.signature;
+
+const marksheetrecords = locals.marksheet ? marksheet.marksheetrecords : [];
+marksheet = locals.marksheet ? JSON.parse(marksheet.data) : null;
+const resultTagMap = new Map();
+resultTags.forEach(tag => resultTagMap.set(tag.id, tag.tagdetails[0].title));
+const remarkTagMap = new Map();
+remarkTags.forEach(tag => remarkTagMap.set(tag.id, tag.tagdetails[0].title));
+
+(function () {
+	if (subjectcategories) {
+		for (let i = marks.length - 1; i >= 0; i--) {
+			let examschedulesubjectcategories = marks[i].examscheduledetail.examschedulesubjectcategories,
+				max_marks = new Map();
+			for (let j = examschedulesubjectcategories.length - 1; j >= 0; j--) {
+				max_marks.set(
+					examschedulesubjectcategories[j].subjectCategoryId,
+					examschedulesubjectcategories[j].max_marks
+				);
+			}
+			marks[i].subjectCategoryMaxMarks = max_marks;
+		}
+	}
+})();
+
+let markrecordCursor = 0, marksCursor = -1, lastStudentId = 0;
+function getMarks(studentId, subjectId, examheadId) {
+	if (lastStudentId !== studentId)
+		marksCursor = 0;
+	lastStudentId = studentId;
+
+	let mark = marks[marksCursor];
+	if (mark === undefined || mark.subjectId !== subjectId || mark.examschedule.examheadId !== examheadId)
+		return {label: '-', value: 0, max: 0};
+	marksCursor++;
+	let markrecord = markrecords[markrecordCursor];
+	if (markrecord === undefined || (markrecord.studentId !== studentId || markrecord.markId !== mark.id)) {
+		return {label: '-', value: 0, max: mark.max_mark};
+	}
+	markrecordCursor++;
+	if (markrecord.obtained_mark === null)
+		return {
+			label: 'ML',
+			value: 0,
+			max: mark.max_mark,
+			subjectCategoryMaxMarks: mark.subjectCategoryMaxMarks,
+		};
+	else
+		return {
+			label: markrecord.obtained_mark,
+			value: markrecord.obtained_mark,
+			max: mark.max_mark,
+			subjectcategory_marks: markrecord.subjectcategory_marks 
+				? JSON.parse(markrecord.subjectcategory_marks) : Object.create(null),
+			subjectCategoryMaxMarks: mark.subjectCategoryMaxMarks,
+		};
+}
+
+let activityMarkCursor = -1, activityMarkRecordCursor = 0, lastActivityStudentId = 0;
+function getActivityMarks(studentId, activityId, examheadId) {
+	if (lastActivityStudentId !== studentId)
+		activityMarkCursor = 0;
+	lastActivityStudentId = studentId;
+	let activitymark = activitymarks[activityMarkCursor];
+	if (activitymark === undefined || activitymark.activityschedule.activityId !== activityId ||
+		activitymark.activityschedule.examschedule.examheadId !== examheadId
+		) {
+		return '-';
+	}
+	activityMarkCursor++;
+	let activitymarkrecord = activitymarkrecords[activityMarkRecordCursor];
+	if (activitymarkrecord === undefined || activitymarkrecord.studentId !== studentId || activitymarkrecord.activitymarkId !== activitymark.id)
+		return '-';
+	activityMarkRecordCursor++;
+	return getGrade(
+		activitymarkrecord.obtained_mark,
+		activitymark.activityschedule.max_marks
+	);
+}
+
+function getGrade(_obtained_mark, max) {
+	if (!grade) return '';
+	if (max === 0) return '-';
+	let obtained_mark = _obtained_mark * 100;
+	for (let i = 0; i < grade.length; i++) {
+		if (grade[i].start * max <= obtained_mark && obtained_mark < grade[i].end * max) {
+			return grade[i].grade;
+		}
+	}
+	let lastGrade = grade[grade.length - 1];
+	if (lastGrade) {
+		if (obtained_mark === lastGrade.end * max)
+			return lastGrade.grade;
+	}
+	return '';
+}
+
+function formatCateogryMarks(marks, subjectcategoryId) {
+	if (marks.label !== marks.value) return marks.label;
+	let value = marks.subjectcategory_marks[`s${subjectcategoryId}`];
+	if (value === undefined) return '-';
+	return getGrade(
+		value,
+		marks.subjectCategoryMaxMarks.get(subjectcategoryId)
+	);
+}
+
+let marksheetRecordCursor = 0;
+function getMarksheetRecord(studentId) {
+	let marksheetRecord = marksheetrecords[marksheetRecordCursor];
+	if (marksheetRecord && marksheetRecord.studentId === studentId) {
+		marksheetRecordCursor++;
+		return JSON.parse(marksheetRecord.data);
+	}
+	return null;
+}
+-%>
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<title>Marksheet</title>
+	<link href="https://fonts.googleapis.com/css?family=Lato:400,900" rel="stylesheet"/>
+<style type="text/css">
+* {
+	box-sizing: border-box;
+	-webkit-box-sizing: border-box;	
+}
+
+html {
+	font-family: 'Lato', sans-serif;
+	font-size: 3mm;
+	line-height: 1.25;
+}
+
+body {
+	margin: 0;
+	color: black;
+	background-color: white;
+	-webkit-print-color-adjust: exact;
+	-moz-print-color-adjust: exact;
+	-ms-print-color-adjust: exact;
+	-o-print-color-adjust: exact;	
+}
+
+@media screen {
+	body {
+		margin: auto;
+		width: 210mm;
+	}
+
+	.marksheet {
+		height: 297mm;
+	}
+}
+
+.marksheet {
+	width: 100%;
+	padding: 5mm;
+	page-break-after: always;
+}
+
+.institute-name {
+	font-size: 2.67em;
+	text-align: center;
+	font-weight: bold;
+	text-transform: uppercase;
+}
+
+.custom-text, .institute-address {
+	font-size: 1.67em;
+	text-align: center;
+}
+
+.custom-text-1 {
+	text-align: center;
+}
+
+.marksheet-title {
+	font-size: 2em;
+	text-align: center;
+	font-weight: bold;
+	text-transform: uppercase;
+}
+
+.session {
+	font-size: 1.67em;
+	text-align: center;
+}
+
+.student-info {
+	padding: 0.83em;
+	border: 0.25mm solid #000000;
+	margin: 1.67em 0;
+}
+
+.student-info > div {
+	float: left;
+	width: 33.33%;
+}
+
+.student-info > div > span {
+	display: inline-block;
+}
+
+.student-info > div > span:first-child {
+	margin-right: 0.5em;
+	font-weight: bold;
+}
+
+.marks > div {
+	float: left;
+	width: 50%;
+}
+
+.marks > div:first-child {
+	padding-right: 0.5em;
+}
+
+.marks > div:last-child {
+	padding-left: 0.5em;	
+}
+
+.marks > div > div {
+	font-weight: bold;
+}
+
+.marks > div > table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.marks th {
+	font-weight: normal;
+	text-align: left;
+	border: 1px solid #000000;
+	padding: 0.5em;
+}
+
+.marks th[colspan] {
+	font-weight: bold;
+}
+
+.marks td {
+	border: 1px solid #000000;
+	padding: 0.5em;
+}
+
+.result {
+	width: 100%;
+	margin-top: 1em;
+	margin-bottom: 1em;
+}
+
+.result td {
+	padding: 0.5em 0;
+	line-height: 1;
+}
+
+.result td:first-child{
+	width: 1%;
+	padding-right: 1em;
+	font-weight: bold;
+}
+
+.signatures {
+	display: flex;
+	display: -webkit-flex;
+	-webkit-justify-content: space-between;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	align-items: flex-start;
+}
+
+.signatures > div {
+	min-width: 16em;
+	text-align: center;
+}
+
+.signatures img {
+	height: 40px;
+}
+
+.signatures > div > div:first-child{
+	height: 1px;
+	background-color: #000000;
+	margin-top: 3em;
+	margin-bottom: 1em;
+}
+
+.signatures > div > div:last-child{
+	text-align: center;
+	font-size: 1.4em;
+	font-weight: bold;
+}
+
+.grade-definition {
+	padding: 0.5em 0;
+	border-top: 1px solid black;
+	margin-top: 1em;
+}
+</style>
+</head>
+<body>
+	<%students.forEach(student => {
+		let marksheetRecord = getMarksheetRecord(student.id);-%>
+	<div class="marksheet">
+		<div class="institute-name"><%=institute.institutedetails[0].name%></div>
+		<div class="custom-text"><%=customText1%></div>
+		<div class="custom-text-1"><%=customText2%></div>
+		<div class="institute-address"><%=institute.institutedetails[0].address%></div>
+		<div class="marksheet-title"><%=title%></div>
+		<div class="session">
+			<%=
+				__(
+					'Session: {{session}}', 
+					{session: siteAdmin.selectedSession.academicsessiondetails[0].name}
+				)
+			%>
+		</div>
+		<div class="student-info">
+			<div>
+				<span><%=__('Student Name')%></span>
+				<span><%=student.user.userdetails[0].fullname%></span>
+			</div>
+			<div>
+				<span><%=__('Father Name')%></span>
+				<span><%=student.studentdetails[0].father_name%></span>
+			</div>
+			<div>
+				<span><%=__('Mother Name')%></span>
+				<span><%=student.studentdetails[0].mother_name%></span>
+			</div>
+			<div>
+				<span><%=__('Admission No.')%></span>
+				<span><%=student.enrollment_no%></span>
+			</div>
+			<div>
+				<span><%=__('Class')%></span>
+				<span><%=bcsmap.class.classesdetails[0].name%></span>
+			</div>
+			<div>
+				<span><%=__('Section')%></span>
+				<span><%=bcsmap.section.sectiondetails[0].name%></span>
+			</div>
+			<div>
+				<span><%=__('Attendance')%></span>
+				<span><%=__('{{value}}/{{total}}', {value: student.attendance, total: totalDays})%></span>
+			</div>
+			<div>
+				<span><%=__('Date Of Birth')%></span>
+				<span><%=moment(student.doa).format(siteAdmin.userdetails.date_format)%></span>
+			</div>
+			<div>
+				<span><%=__('Roll No.')%></span>
+				<span><%=student.studentrecord.roll_no%></span>
+			</div>
+			<div style="clear: both; float: none;"></div>
+		</div>
+		<div class="marks">
+			<div>
+				<div><%=__('Scholastic Activities')%></div>
+				<table>
+					<thead>
+						<tr>
+							<th><%=__('Subjects')%></th>
+							<% for (let i = 0; i < subjectExams.length; i++) { -%>
+							<th><%=subjectExams[i].examheaddetails[0].alias%></th>
+							<% } -%>
+						</tr>
+					</thead>
+					<tbody>
+						<%subjects.forEach(subject => {
+							let subjectHasCategories = subjectcategories && subject.subjectcategories.length !== 0;
+							if (subjectHasCategories) {
+								let marks = subjectExams.map(examhead => getMarks(student.id, subject.id, examhead.id));
+								%>
+								<tr>
+									<td colspan="<%=subjectExams.length + 1%>">
+										<%=subject.subjectdetails[0].name%>
+									</td>
+								</tr>
+								<%subject.subjectcategories.forEach(subjectcategory => {%>
+								<tr>
+									<td><%=subjectcategory.subjectcategorydetails[0].name%></td>
+									<% for (let i = 0; i < subjectExams.length; i++) {%>
+										<td><%=formatCateogryMarks(marks[i], subjectcategory.id)%></td>
+									<%}%>
+								</tr>
+								<%})%>
+							<% } else { %>
+								<tr>
+									<td><%=subject.subjectdetails[0].name%></td>
+									<% for (let i = 0; i < subjectExams.length; i++) {
+										let marks = getMarks(student.id, subject.id, subjectExams[i].id);%>
+										<td><%=marks.label%></td>
+									<%}%>
+								</tr>
+							<%}
+						})%>
+					</tbody>
+				</table>
+			</div>
+			<div>
+				<div><%=__('Co-Scholastic Activities')%></div>
+				<table>
+					<thead>
+						<tr>
+							<th><%=__('Subjects')%></th>
+							<% for (let i = 0; i < activityExams.length; i++) { -%>
+							<th><%=activityExams[i].examheaddetails[0].alias%></th>
+							<% } -%>
+						</tr>
+					</thead>
+					<tbody>
+						<%activities.forEach(activity => {
+							let activityHasSubActivities = subActivities && activity.subActivities.length !== 0;
+							if (activityHasSubActivities) {%>
+							<tr>
+								<td colspan="<%=activityExams.length + 1%>">
+									<%=activity.activitydetails[0].name%>
+								</td>
+							</tr>
+							<%activity.subActivities.forEach(subActivity => {%>
+							<tr>
+								<td><%=subActivity.activitydetails[0].name%></td>
+								<%activityExams.forEach(examhead => {-%>
+								<td><%=getActivityMarks(student.id, subActivity.id, examhead.id)%></td>
+								<%})%>
+							</tr>
+							<%})%>
+						<%} else {-%>
+							<tr>
+								<td><%=activity.activitydetails[0].name%></td>
+								<%activityExams.forEach(examhead=> {-%>
+								<td><%=getActivityMarks(student.id, activity.id, examhead.id)%></td>
+								<%})%>
+							</tr>
+						<% } %>
+						<%})-%>
+					</tbody>
+				</table>
+			</div>
+			<div style="clear: both; float: none;"/></div>
+		</div>
+		<table class="result">
+			<tbody>
+				<tr>
+					<td><%=__('Remarks')%></td>
+					<td><%=marksheetRecord ? remarkTagMap.get(marksheetRecord.remark) : ''%></td>
+				</tr>
+				<tr>
+					<td><%=__('Result')%></td>
+					<td><%=marksheetRecord ? resultTagMap.get(marksheetRecord.result) : ''%></td>
+				</tr>
+			</tbody>
+		</table>
+		<div class="signatures">
+			<div>
+				<%if (classTeacherSignature) {%>
+				<img src="<%=siteAdmin.servicePath + classTeacherSignature%>">
+				<%} else {%>
+				<div></div>
+				<%}%>
+				<div><%=__('Class Teacher')%></div>
+			</div>
+			<div>
+				<div></div>
+				<div><%=__('Parent')%></div>
+			</div>
+			<div>
+				<%if (institute.user.signature) {%>
+				<img src="<%=siteAdmin.servicePath + institute.user.signature%>">
+				<%} else {%>
+				<div></div>
+				<%}%>
+				<div><%=__('Principal')%></div>
+			</div>
+		</div>
+		<div class="grade-definition">
+		</div>
+		<% if (abbreviations) {-%><%-abbreviationsHTML%><% } -%>
+	</div>
+	<%})-%>
+</body>
+</html>

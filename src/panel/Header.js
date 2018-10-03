@@ -1,185 +1,150 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
-import classNames from 'classnames';
-import actions from '../redux/actions';
-import { Link, withRouter } from 'react-router';
+import {connect} from 'react-redux';
+import {IndexLink, Link} from 'react-router';
+import {
+	Icon,
+	Image,
+	MenuItem,
+	FormControl,
+	Dropdown,
+} from '../components';
 import makeTranslater from '../translate';
 
-import {connect} from 'react-redux';
-
-import {
-	Label,
-	SidebarBtn,
-	Dispatcher,
-	NavDropdown,
-	NavDropdownHover,
-	Navbar,
-	Nav,
-	NavItem,
-	MenuItem,
-	Badge,
-	Button,
-	Icon,
-	Grid,
-	Row,
-	Radio,
-	FormControl,
-	FormGroup,
-	ControlLabel,
-	Col } from '@sketchpixy/rubix';
-
-@connect(state => ({
-	session: state.session
-}))
-class Brand extends React.Component {
-	render() {
-		return (
-			<Navbar.Header >
-				<div className="profile-info">
-					<span style={{
-						top: 23,
-						fontSize: 16,
-						lineHeight: 1,
-						position: 'relative'
-					}}>
-						{this.props.session.user_type !== "admin" ? this.props.session.userdetails.fullname : null}
-					</span>
-				</div>
-			</Navbar.Header>
-		);
-	}
-}
-
-@withRouter
 @connect(state => ({
 	session: state.session,
-	lang: state.lang
+	lang: state.lang,
+	translations: state.translations,
 }))
-class HeaderNavigation extends React.Component {
-	openAccountSettings = () => {
-		switch (this.props.session.user_type) {
-			case 'doctor':
-				this.props.router.push('/doctor/account');
-				break;
-			case 'hospital':
-				this.props.router.push('/hospital/account');
-				break;
-			case 'admin':
-				this.props.router.push('/admin/account');
-				break;
-			case 'doctor_clinic_both':
-				this.props.router.push('/doctor/account');
-		}
-	};
-
-	render() {
+export default class Header extends React.Component {
+	render () {
 		let __ = makeTranslater(
 			this.props.translations,
 			this.props.lang.code
 		);
 		return (
-			<Nav pullRight>
-				{
-					this.props.session.user_type == 'hospital' && this.props.session.allHospitalProfiles!= null && this.props.session.allHospitalProfiles.length > 1 &&
-					<NavItem>
-						<Grid>
-							<Row>
-								<Col xs={12}>
-									<span style={{fontSize: '20px'}}>{__('Switch Clinic')} &nbsp;</span>
+			<header id='header'>
+				<div className='pull-left'>
+					<span id='menu-btn' onClick={toggleSidebar}>
+						<i className='fa fa-bars' to='/'/>
+					</span>
+					<IndexLink to='/' id='logo'>
+						<img src='/imgs/admin/logo.png'/>
+					</IndexLink>
+					<Link to='/profile' id='profile-name'>
+						{this.props.session.userdetails.fullname}
+					</Link>
+				</div>
+				<div className='pull-right'>
+					{
+						this.props.session.masterId !== 1 &&
+						this.props.session.selectedSession &&
+						<span id='session-name'>
+							{__('Session')}: {this.props.session.selectedSession.academicsessiondetails[0].name}
+						</span>
+					}	
+					{
+						this.props.session.modules.chat &&
+						<span id='chat-btn' onClick={toggleChat}>
+							<i className='fa fa-comments'/>
+						</span>
+					}
+					<Dropdown id="settings-btn" componentClass='span' pullRight onToggle={toggleSetting}>
+						<Image bsRole='toggle' src='/imgs/admin/settings.png'/>
+						<Dropdown.Menu>
+							{
+								this.props.session.languages.length > 1 &&
+								<MenuItem key='lang-header' header>
+									{__('Change Language')}
+								</MenuItem>
+							}
+							{
+								this.props.session.languages.length > 1 &&
+								<MenuItem disabled>
+									<FormControl
+										componentClass='select'
+										value={this.props.lang.id}
+										onChange={changeLanguage}
+										style={{margin: '8px 0'}}>
+										{this.props.session.languages.map(renderLanguage)}
+									</FormControl>
+								</MenuItem>
+							}
+							{
+								this.props.session.userdetails.academicSessions.length > 1 &&
+								<MenuItem key='session-header' header>
+									{__('Change Academic Session')}
+								</MenuItem>
+							}
+							{
+								this.props.session.userdetails.academicSessions.length > 1 &&
+								<MenuItem disabled>
 									<FormControl
 										componentClass="select"
-										onChange={::this.handleHospitalProfileChange}
-										name='hospitalId'
-										value={this.props.session.associatedProfileData.id}
-										style={{width: '200px', display: 'inline'}}
-									>
-										{this.props.session.allHospitalProfiles.map(this.createHospitalMenuItem, this)}
+										onChange={changeSession}
+										name='sessionId'
+										value={this.props.session.selectedSession.id}
+										style={{margin: '8px 0'}}>
+										{
+											this.props.session.userdetails.academicSessions.map(
+												renderSession
+											)
+										}
 									</FormControl>
-								</Col>
-							</Row>
-						</Grid>
-					</NavItem>
-				}
-				<Nav>
-					<NavDropdownHover
-						id="lang-selection"
-						noCaret
-						title={this.props.lang.code}
-						className='header-menu'
-						onSelect={::this.handleLangChange}>
-						<MenuItem key='flag-header' header>Please select language</MenuItem>
-						{this.props.session.languages.map(this.createLanguageMenuItem, this)}
-					</NavDropdownHover>
-					<NavDropdownHover
-						noCaret
-						className='logout'
-						id="settings"
-						title={<Icon glyph='icon-fontello-cog-5' style={{color: 'white'}}/>}>
-						<MenuItem className='text-right' onSelect={this.openAccountSettings}>{__('Account Settings')}</MenuItem>
-						<MenuItem className='text-right' href='/logout'>{__('Logout')}</MenuItem>
-					</NavDropdownHover>
-				</Nav>
-			</Nav>
-		);
-	}
-
-	handleLangChange(language) {
-		window.location.href = '/setLanguage/' + language.id 
-			+ '/' + language.direction 
-			+ '/' + language.code;
-	}
-
-	createLanguageMenuItem(language) {
-		return (
-			<MenuItem
-				key={language.id}
-				eventKey={language}
-				active={this.props.lang.id === language.id}>
-				<Grid>
-					<Row>
-						<Col xs={12}>
-							{language.name}
-						</Col>
-					</Row>
-				</Grid>
-			</MenuItem>
-		)
-	}
-
-	handleHospitalProfileChange(event) {
-		window.location.href = `/setHospital/${event.target.value}`;
-	}
-	createHospitalMenuItem(hospitalProfile) {
-		return (
-			<option key={hospitalProfile.id} value={hospitalProfile.id}>
-				{hospitalProfile.hospitaldetails[0].hospital_name}
-			</option>
+								</MenuItem>
+							}
+							<MenuItem componentClass='div'>
+								<Link to='/profile' className='btn pull-left'>{__('Profile')}</Link>
+								<a onClick={logout} href='/logout' className='btn pull-right'>
+									{__('Logout')}
+								</a>
+							</MenuItem>
+						</Dropdown.Menu>
+					</Dropdown>
+				</div>
+			</header>
 		);
 	}
 }
 
-export default class Header extends React.Component {
-	render() {
-		return (
-			<Grid id='navbar' {...this.props}>
-				<Row>
-					<Col xs={12}>
-						<Navbar fixedTop fluid id='rubix-nav-header'>
-							<Row>
-								<Col xs={3} visible='xs'>
-									<SidebarBtn />
-								</Col>
-								<Col xs={6} sm={4}>
-									<Brand />
-								</Col>
-								<Col xs={3} sm={8} collapseRight className='text-right'>
-									<HeaderNavigation />
-								</Col>
-							</Row>
-						</Navbar>
-					</Col>
-				</Row>
-			</Grid>
-		);
-	}
+function renderLanguage(language) {
+	return (
+		<option
+			key={language.id}
+			value={language.id}
+			data-value={'/' + language.id + '/' + language.direction + '/' + language.code}>
+			{language.name}
+		</option>
+	)
+}
+
+function renderSession(session) {
+	return (
+		<option key={session.id} value={session.id}>
+			{session.academicsessiondetails[0].name}
+		</option>
+	);
+}
+
+function toggleSidebar() {
+	$('#sidebar').toggleClass('open');
+}
+
+function changeLanguage(event) {
+	window.location.href = '/setLanguage' + $(event.target).find(':selected').attr('data-value');
+}
+
+function changeSession(event) {
+	window.location.href = `/setAcademicSession/${event.target.value}`;
+}
+
+function toggleChat() {
+	$('#chat').toggleClass('open');
+}
+
+function toggleSetting() {
+	$('#chat').removeClass('open');
+}
+
+function logout() {
+	window.location.href = '/logout';
 }

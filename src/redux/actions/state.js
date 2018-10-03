@@ -1,142 +1,131 @@
-import api, {makeErrors, makeApiData} from '../../api';
+import api, {makeApiData, makeErrors} from '../../api';
+import {paramsFromState} from '../../utils';
+export {updateFilter} from './index';
 
 const view = 'state';
 
 export function init(state) {
-	let	params = {
-		...state.location.query
-	};
-	if (state.view && state.view.viewName === view)
-		params = Object.assign(params, state.view.state.filter);
-	return dispatch => {
+	return async dispatch => {
 		dispatch({
 			type: 'LOADING_MODULE',
 			view
 		});
-		return api({
-			params,
+		let {data} = await api({
 			url: '/admin/state',
 			cookies: state.cookies,
 			data: makeApiData(state),
-		})
-		.then(function ({data}) {
-			dispatch({
-				type: 'INIT_MODULE',
-				view,
-				data,
-				stopLoading: true
-			})
-		})
-	}
+			params: paramsFromState(state, view),
+		});
+		
+		dispatch({
+			type: 'INIT_MODULE',
+			view,
+			data,
+		});
+	};
 }
 
 export function startAdd(state) {
-	return dispatch => {
-		dispatch({
-			type: 'LOADING_MODULE',
-			view
-		});
+	return async dispatch => {
+		dispatch({type: 'START_EDIT_STATE'});
 
-		return api({
+		let {data} = await api({
 			data: makeApiData(state),
 			url: '/admin/state/add'
-		})
-		.then(({data}) => {
-			dispatch({
-				type: 'START_ADD_STATE',
-				data,
-				stopLoading: true
-			});
 		});
-	}
-}
-
-export function viewList() {
-	return {
-		type: 'VIEW_STATE_LIST'
-	}
-}
-
-export function save(state, userId) {
-	let data = makeApiData(
-		state,
-		{
-			id: state.item.id,
-			countryId:state.item.countryId,
-			code:state.item.code,
-			alias:state.item.alias,
-			state_detail:
-			{
-				id: state.item.detailId,
-				name: state.item.name
+		
+		dispatch({
+			type: 'START_ADD_STATE',
+			countries: data.countries.map(item => ({
+				value: item.id,
+				label: item.countrydetails[0].name,
+			})),
+			data: {
+				name: '',
+				code: '',
+				alias: '',
+				countryId: null,
+				is_active: true,
 			},
-			userId
-		}
-	);
-	if (state.item.is_active) data.is_active = 1;
-	return dispatch => api({
-		data,
-		url: '/admin/state/save'
-	})
-	.then(({data}) => {
-		if (data.errors)
-			return dispatch({
+		});
+	};
+}
+
+export function save(state) {
+	return async dispatch => {
+		let {data} = await api({
+			url: '/admin/state/save',
+			data: makeApiData(
+				state, {
+					id: state.item.id,
+					code:state.item.code,
+					alias:state.item.alias,
+					userId: state.session.id,
+					countryId:state.item.countryId || '',
+					is_active: state.item.is_active,
+					state_detail: {
+						id: state.item.detailId,
+						name: state.item.name
+					},
+				}
+			),
+		});
+		if (data.errors) {
+			dispatch({
 				type: 'SET_STATE_ERRORS',
 				errors: makeErrors(data.errors)
 			});
-		if (state.item.id) {
-			dispatch(init(state));
 		} else {
-			state.router.push('/admin/state');
+			state.router.push(state.router.location.pathname);
 		}
-	});
+	};
 }
 
-export function edit(state, itemId) {
-	let data = makeApiData(
-		state,
-		{
-			id: itemId,
-		}
-	);
-	return dispatch => {
-		dispatch({
-			type: 'LOADING_MODULE',
-			view
-		});
+export function edit(state, id) {
+	return async dispatch => {
+		dispatch({type: 'START_EDIT_STATE'});
 
-		return api({
-			data: data,
-			url: '/admin/state/edit'
-		})
-		.then(({data}) => {
-			dispatch({
-				type: 'SET_STATE_EDIT_DATA',
-				data,
-				stopLoading: true
-			});
+		let {data: {data, countries}} = await api({
+			url: '/admin/state/edit',
+			data: makeApiData(state, {id}),
 		});
-	}
+		
+		dispatch({
+			type: 'SET_STATE_EDIT_DATA',
+			data: {
+				id: data.id,
+				code: data.code,
+				alias: data.alias,
+				countryId: data.countryId,
+				is_active: data.is_active,
+				name: data.statedetails[0].name,
+				detailId: data.statedetails[0].id,
+			},
+			countries: countries.map(item => ({
+				value: item.id,
+				label: item.countrydetails[0].name,
+			})),
+		});
+	};
 }
 
-export function changeStatus(state, itemId, status) {
-	return dispatch => {
+export function changeStatus(state, itemId, status, oldstatus) {
+	return async dispatch => {
 		dispatch({
-			type: 'CHANGE_ITEM_STATUS',
+			type: 'CHANGE_STATE_STATUS',
 			itemId,
-			status: -1
+			status: -1,
 		});
 
-		return api({
+		let {data} = await api({
 			data: makeApiData(state),
 			url: '/admin/state/status/' + itemId + '/' + status
-		})
-		.then(({data}) => {
-			dispatch({
-				type: 'CHANGE_ITEM_STATUS',
-				itemId,
-				status
-			});
 		});
-	}
+		
+		dispatch({
+			type: 'CHANGE_STATE_STATUS',
+			itemId,
+			status: data.status ? status : oldstatus,
+		});
+	};
 }

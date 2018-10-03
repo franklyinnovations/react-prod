@@ -1,5 +1,6 @@
 import api, {makeErrors} from '../../api';
-import {messenger} from "../../utils";
+import {messenger} from '../../utils';
+export {update, updateFilter} from './index';
 
 export function init() {
 	return dispatch => {
@@ -10,7 +11,6 @@ export function init() {
 		dispatch({
 			type: 'INIT_MODULE',
 			view: 'resetpassword',
-			stopLoading: true,
 		});
 	};
 }
@@ -28,7 +28,7 @@ export function sendRequest(password, confirm_password, reset_password_token, ro
 				confirm_password,
 				reset_password_token
 			},
-			hideMessage: true
+			hideMessage: true,
 		})
 		.then(({data}) => {
 			if (data.status !== false && !data.errors) {
@@ -43,7 +43,9 @@ export function sendRequest(password, confirm_password, reset_password_token, ro
 					confirmPassword: errors.confirm_password
 				};
 			} else {
-				messenger.post(data.message);
+				errors = {
+					message: data.message
+				}
 			}
 			dispatch({
 				type: 'SET_RESET_PASSWORD_ERRORS',

@@ -1,39 +1,41 @@
 import React from 'react';
 import {connect} from 'react-redux';
 
-import actions from '../redux/actions';
-import Pagination from '../components/Pagination';
-import Loading from '../components/Loading';
-import Select from '../components/Select';
-
 import makeTranslater from '../translate';
-import {makeApiData} from '../api';
-import {getStatusLabel, getTagTypes,getTagType} from '../utils';
+
+import {
+	filterValue,
+	moduleActions,
+	getStatusTitle,
+	getStatusOptions,
+	filtersFromQuery,
+	queryFromFilters,
+} from '../utils';
+
+import {addView} from '../redux/reducers/views';
+import reducer from '../redux/reducers/tag';
+import * as actions from '../redux/actions/tag';
+addView('tag', reducer);
 
 import {
 	Row,
 	Col,
-	Grid,
-	Panel,
-	Table,
-	PanelBody,
-	PanelHeader,
-	PanelContainer,
 	Icon,
+	View,
+	Text,
+	Modal,
 	Button,
-	Form,
-	FormGroup,
-	ControlLabel,
-	InputGroup,
-	FormControl,
+	Select,
+	Loading,
 	Checkbox,
 	HelpBlock,
-} from '@sketchpixy/rubix';
-
-import url from 'url';
-
-/*tag*/
-const viewName = 'tag';
+	DataTable,
+	FormGroup,
+	Pagination,
+	FormControl,
+	ClickButton,
+	ControlLabel,
+} from '../components';
 
 @connect(state => ({
 	session: state.session,
@@ -41,417 +43,391 @@ const viewName = 'tag';
 	loading: state.view.loading || false,
 	translations: state.translations,
 	lang: state.lang,
-	...state.view.tag
+	...state.view.state,
 }))
 export default class Tag extends React.Component{
-	constructor(props) {
-		super(props);
-
-		this.handleDataUpdate = event =>{
-			let value;
-			value = event.target.value;
-			this.updateData(event.target.name, value);
-		}
-		this.handleDataTag = event =>{
-			let value;
-			value = event.target.value;
-			this.handleDataTag(event.target.name, value);
-		}
-
-		this.handleEdit = event =>{
-			this.edit(event.target.getAttribute('data-item-id'));
-		}
-		this.handleState = event => {
-			this.changeStatus(
-					event.target.getAttribute('data-item-id'),
-					event.target.getAttribute('data-item-status') === '1' ? '0' : '1',
-					)
-			};
-		this.state={
-	      options : []
-	  }
-
-	}
-	async componentWillMount(){
-	  var options = await getTagType(this.props);
-	  this.setState({options : options})
-	}
 	static fetchData(store){
-		return store.dispatch(
-			actions.tag.init(
-				store.getState()
-			)
-		)
+		return store.dispatch(actions.init(store.getState()));
 	}
+
+	permissions = moduleActions(this.props.session.modules, 'tag');
+	toggleFilters = () => {
+		if (this.props.filters === null) {
+			this.props.dispatch({
+				type: 'SHOW_FILTERS',
+				filters: filtersFromQuery(this.props.query)
+			});
+		} else {
+			this.props.dispatch({
+				type: 'HIDE_FILTERS',
+			});
+		}
+	};
+	search = () => {
+		this.props.dispatch({
+			type: 'SET_QUERY',
+			query: queryFromFilters(this.props.filters),
+		});
+		this.props.router.push(this.props.router.createPath(this.props.router.location.pathname));
+	};
+	reset = () => {
+		this.props.dispatch({
+			type: 'SET_QUERY',
+			query: [],
+		});
+		this.props.router.push(this.props.router.location);
+	};
+	changePage = page => this.props.router.push(
+		this.props.router.createPath({
+			pathname: this.props.router.location.pathname,
+			query: {page},
+		})
+	);
+	updateFilter = event => this.props.dispatch(actions.updateFilter(event));
+
+	startAdd = () => this.props.dispatch({
+		type: 'START_ADD_TAG',
+		data: {
+			title: '',
+			type: null,
+			description: '',
+			is_active: 1,
+		},
+	});
+	edit = event => this.props.dispatch(
+		actions.edit(
+			this.props,
+			+event.currentTarget.getAttribute('data-item-id')
+		)
+	);
+	hideDataModal = () => this.props.dispatch({type: 'HIDE_DATA_MODAL'});
+	updateData = event => this.props.dispatch({
+		type: 'UPDATE_DATA_VALUE',
+		name: event.currentTarget.name,
+		value: event.currentTarget.value,
+	});
+	save = () => this.props.dispatch(actions.save(this.props));
+	changeStatus = event => this.props.dispatch(
+		actions.changeStatus(
+			this.props,
+			+event.currentTarget.getAttribute('data-item-id'),
+			+event.currentTarget.value,
+			+event.currentTarget.getAttribute('data-item-status'),
+		)
+	);
 
 	render() {
 		if (this.props.loading) return <Loading/>;
-		let content, __ = makeTranslater(
-			this.props.translations,
-			this.props.lang.code
-		);
-		switch(this.props.viewState) {
-			case 'DATA_FORM':
-				content = this.renderAdd(__);
-				break;
-			default:
-				content = this.renderList(__);
-		}
+		let __ = makeTranslater(this.props.translations, this.props.lang.code),
+			firstTime = this.props.pageInfo.totalData === 0 &&
+				this.props.query.length === 0 &&
+				this.props.pageInfo.currentPage === 1;
 		return (
-			<Row>
-				<Col xs={12}>
-					<PanelContainer controls={false} className="overflow-visible">
-						<Panel>
-							<PanelHeader className='bg-green'>
-								<Grid>
-									<Row>
-										<Col xs={4} md={10} className='fg-white'>
-											<h3>{__('Tag List')}</h3>
-										</Col>
-										<Col xs={8} md={2}>
-											<h3>
-												{this.props.viewState === 'LIST' &&
-												<Button
-													inverse
-													outlined
-													style={{marginBottom: 5}}
-													bsStyle='default'
-													onClick={::this.startAddNew}
-												>
-													{__('Add New')}
-												</Button>}
-												{this.props.viewState === 'DATA_FORM' &&
-												<Button
-													inverse
-													outlined
-													style={{marginBottom: 5}}
-													bsStyle='default'
-													onClick={::this.viewList}
-												>
-													{__('View List')}
-												</Button>}
-											</h3>
-										</Col>
-									</Row>
-								</Grid>
-							</PanelHeader>
-							<PanelBody>
-								<Grid>
-									{content}
-								</Grid>
-							</PanelBody>
-						</Panel>
-					</PanelContainer>
-				</Col>
-			</Row>
-		);
-	}
-
-
-	renderList(__) {
-		return (
-			<Row key="section-list">
-				<Col xs={12}>
-					<Table condensed striped>
-						<thead>
-							<tr>
-								<th>{__('S No.')}</th>
-								<th>{__('Title')}</th>
-								<th>{__('Type')}</th>
-								<th>{__('Status')}</th>
-								<th>{__('Actions')}</th>
-							</tr>
-							<tr>
-								<th></th>
-								<th>
+			<React.Fragment>
+				{
+					firstTime ?
+					<View>{this.renderFirstMessage()}</View> : 
+					<View
+						search={this.props.query}
+						filters={this.renderFilters(__)}
+						actions={this.renderViewActions(__)}>
+						{this.renderData(__)}
+					</View>
+				}
+				<Modal
+					onHide={this.hideDataModal}
+					show={this.props.item !== false}>
+					{
+						this.props.item &&
+						<Modal.Header closeButton>
+							<Modal.Title>
+								{
+									this.props.item.id ?
+									<Text>Edit Tag</Text> :
+									<Text>Add Tag</Text>
+								}
+							</Modal.Title>
+						</Modal.Header>
+					}
+					<Modal.Body>
+						{this.props.item === null && <Loading/>}
+						{
+							this.props.item &&
+							<React.Fragment>
+								<FormGroup
+									controlId='title'
+									validationState={this.props.errors.title ? 'error': null}>
+									<ControlLabel><Text>Title</Text></ControlLabel>
 									<FormControl
+										autoFocus
+										name='title'
 										type='text'
-										onChange={this.makeFilter('tagdetail__title')}
-										value={this.props.filter.tagdetail__title || ''}
-										placeholder={__('Search by title.')}
-									/>
-								</th>
-								<th>
-
+										placeholder={__('Title')}
+										onChange={this.updateData}
+										value={this.props.item.title}/>
+									<HelpBlock>{this.props.errors.title}</HelpBlock>
+								</FormGroup>
+								<FormGroup
+									controlId='type'
+									validationState={this.props.errors.type ? 'error': null}>
+									<ControlLabel><Text>Type</Text></ControlLabel>
 									<Select
-										name="tag__tagtypeId__eq"
-										onChange={this.makeFilter('tag__tagtypeId__eq')}
-										value={this.props.filter.tag__tagtypeId__eq || ''}
-										options={this.state.options}
-										style={{borderRadius: '0px'}}
-									/>
-								</th>
-								<th>
+										name='type'
+										placeholder={__('Type')}
+										onChange={this.updateData}
+										value={this.props.item.type}
+										disabled={!!this.props.item.id}
+										options={Tag.getTagTypeOptions(__)}/>
+									<HelpBlock>{this.props.errors.type}</HelpBlock>
+								</FormGroup>
+								<FormGroup
+									controlId='description'
+									validationState={this.props.errors.description ? 'error': null}>
+									<ControlLabel><Text>Description</Text></ControlLabel>
 									<FormControl
-									componentClass="select"
-									placeholder="select"
-									onChange={this.makeFilter('tag__is_active')}
-									value={this.props.filter.tag__is_active || ''}
-									>
-									<option value=''>{__('All')}</option>
-									<option value='1'>{__('Active')}</option>
-									<option value='0'>{__('Inactive')}</option>
-									</FormControl>
-            					 </th>
-								<th>
-									<Icon
-										className={'fg-darkcyan'}
-										style={{fontSize: 20}}
-										glyph={'icon-feather-search'}
-										onClick={::this.search}
-									/>
-									<Icon
-										className={'fg-brown'}
-										style={{fontSize: 20}}
-										glyph={'icon-feather-reload'}
-										onClick={::this.reset}
-									/>
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-						{this.props.tags.map(this.getDataRow, this)}
-						{this.props.tags.length === 0 && this.getNoDataRow(__)}
-						</tbody>
-					</Table>
-				</Col>
-				<Col xs={12}>
-					<Pagination
-						data={this.props.pageInfo}
-						onSelect={::this.changePage}/>
-				</Col>
-			</Row>
+										name='description'
+										componentClass='textarea'
+										onChange={this.updateData}
+										placeholder={__('Description')}
+										value={this.props.item.description}
+										options={Tag.getTagTypeOptions(__)}/>
+									<HelpBlock>{this.props.errors.description}</HelpBlock>
+								</FormGroup>
+								<Row>
+									<Col xs={6}>
+										<Checkbox
+											name='is_active'
+											onChange={this.updateData}
+											value={this.props.item.is_active}>
+											<ControlLabel><Text>Status</Text></ControlLabel>
+										</Checkbox>
+									</Col>
+									<Col xs={6} className='text-right'>
+										<Button
+											bsStyle='primary'
+											onClick={this.save}
+											disabled={this.props.saving}>
+											<Text>Submit</Text>
+										</Button>
+									</Col>
+								</Row>
+							</React.Fragment>
+						}
+					</Modal.Body>
+				</Modal>
+			</React.Fragment>
 		);
 	}
 
-	renderAdd(__) {
+	renderFirstMessage() {
 		return (
-			<Row>
-				<Col xs={12} md={8} lg={6}>
-					<Form>
-						<FormGroup
-							controlId='title'
-							validationState={this.props.errors.title ? 'error': null}
-						>
-							<ControlLabel>{__('Title')}</ControlLabel>
-							<FormControl
-								type='text'
-								placeholder={__('Title')}
-								value={this.props.tag.title}
-								name='title'
-									onChange={this.handleDataUpdate}
-							/>
-							<HelpBlock>{this.props.errors.title}</HelpBlock>
-						</FormGroup>
-						<FormGroup
-							controlId='description'
-							validationState={this.props.errors.description ? 'error': null}
-						>
-							<ControlLabel>{__('Description')}</ControlLabel>
-							<FormControl
-								componentClass='textarea'
-								rows='3'
-								type='textarea'
-								placeholder={__('Description')}
-								value={this.props.tag.description}
-								name='description'
-								onChange={this.handleDataUpdate}
-							/>
-							<HelpBlock>{this.props.errors.description}</HelpBlock>
-						</FormGroup>
-						<FormGroup
-							controlId='tagtypeId'
-							validationState={this.props.errors.tagtypeId ? 'error': null}
-						>
-							<ControlLabel>{__('Type')}</ControlLabel>
-							<Select
-								name="tagtypeId"
-								resetValue={''}
-								onChange={this.handleDataUpdate}
-								value={this.props.tag.tagtypeId}
-								options={this.state.options}
-								disabled={!!this.props.tag.id}
-							/>
-							<HelpBlock>{this.props.errors.tagtypeId}</HelpBlock>
-						</FormGroup>
-					</Form>
-					<Row>
-						<Col xs={12}>
-							<div>
-								<Button
-									outlined
-									bsStyle='lightgreen'
-									onClick={::this.viewList}
-									disabled={this.props.saving}
-									>
-									{__('Cancel')}
-								</Button>{' '}
-								<Button
-									outlined
-									bsStyle='lightgreen'
-									onClick={::this.save}
-									/*disabled={this.props.saving}*/
-									>
-									{__('Submit')}
-								</Button>
-							</div>
-							<br/>
-						</Col>
-					</Row>
-				</Col>
-			</Row>
-		)
+			<div className='first-message'>
+				<Row className='text-center'>
+					<Col mdOffset={3} md={6}>
+						<h3><Text>Tags</Text></h3>
+						<div>
+							<Text>Add tap-able strings for various categories like attendance, exams, result etc. to give more specific feedback.</Text>
+						</div>
+					</Col>
+				</Row>
+				{
+					this.permissions.add &&
+					<ClickButton
+						side='left'
+						glyph='fa-plus'
+						text='Let’s Add Now'
+						btnText='Add Tag'
+						onClick={this.startAdd}/>
+				}
+			</div>
+		);
 	}
 
-	makeFilter(name) {
-		let dispatch = this.props.dispatch;
-		return event => {
-			dispatch({
-				type: 'UPDATE_FILTER',
-				name,
-				value: event.target.value
-			});
+	renderFilters(__) {
+		const filters = this.props.filters;
+		if (filters === null) return false;
+		return (
+			<View.Filters search={this.search} remove={this.toggleFilters}>
+				<FormControl
+					type='text'
+					title={__('Title')}
+					placeholder={__('Title')}
+					name='tagdetail__title'
+					onChange={this.updateFilter}
+					value={filterValue(filters, 'tagdetail__title', '')} />
+				<Select
+					title={__('Type')}
+					name='tag__type__eq'
+					onChange={this.updateFilter}
+					placeholder={__('Select Type')}
+					options={Tag.getTagTypeOptions(__)}
+					value={filterValue(filters, 'tag__type__eq', null)}/>
+				<Select
+					title={__('Status')}
+					name='tag__is_active__eq'
+					onChange={this.updateFilter}
+					options={getStatusOptions(__)}
+					placeholder={__('Select Status')}
+					value={filterValue(filters, 'tag__is_active__eq', null)}/>
+			</View.Filters>
+		);
+	}
+
+	renderViewActions(__) {
+		return (
+			<View.Actions>
+				{
+					this.permissions.add &&
+					<View.Action onClick={this.startAdd}>
+						<Text>Add New</Text>
+					</View.Action>
+				}
+				<View.Action onClick={this.toggleFilters} title={__('Filters')}>
+					<Icon glyph='fa-filter'/>
+				</View.Action>
+				<View.Action onClick={this.reset} title={__('Reset')}>
+					<Icon glyph='fa-redo-alt'/>
+				</View.Action>
+			</View.Actions>
+		);
+	}
+
+	renderData(__) {
+		return (
+			<React.Fragment>
+				<DataTable>
+					<thead>
+						<tr>
+							<td className='tw-8'>
+								<Text>Status</Text>
+							</td>
+							<td className='tw-35'>
+								<Text>Title</Text>
+							</td>
+							<td className='tw-20'>
+								<Text>Type</Text>
+							</td>
+							<td>
+								<DataTable.ActionColumnHeading/>
+							</td>
+						</tr>
+					</thead>
+					<tbody>
+						{this.renderDataRows(__)}
+					</tbody>
+				</DataTable>
+				<Pagination data={this.props.pageInfo} onSelect={this.changePage}/>
+			</React.Fragment>
+		);
+	}
+
+	renderDataRows(__) {
+		if (this.props.items.length === 0) {
+			return <DataTable.NoDataRow colSpan={5}/>;
 		}
-	}
-
-	search() {
-		this.props.router.push('/admin/tag');
-	}
-
-	reset() {
-		this.props.dispatch({
-			type: 'RESET_FILTERS'
-		});
-		this.props.router.push('/admin/tag');
-	}
-
-	getDataRow(tag, index) {
-		let __ = makeTranslater(
-			this.props.translations,
-			this.props.lang.code
-		);
-		let serialNo = (this.props.pageInfo.pageLimit * (this.props.pageInfo.currentPage - 1));
-		return (
-			<tr key={tag.id}>
-				<td>{serialNo + ++index}</td>
-				<td>{tag.tagdetails[0].title}</td>
-				<td>{tag.tagtype.tagtypedetails[0].title}</td>
-				<td>{__(getStatusLabel(tag.is_active, __))}</td>
+		return this.props.items.map(item => (
+			<tr key={item.id}>
+				<td className='tw-8'>
+					<Checkbox
+						inline
+						title={getStatusTitle(item.is_active, __)}
+						onChange={this.changeStatus}
+						data-item-id={item.id}
+						data-item-status={item.is_active}
+						disabled={!this.permissions.status}
+						value={item.is_active}/>
+				</td>
+				<td className='tw-35'>
+					{item.tagdetails[0].title}
+				</td>
+				<td className='tw-20'>
+					<Text>{Tag.getTagType(item.type)}</Text>
+				</td>
 				<td>
-					<Icon
-						className={'fg-brown'}
-						style={{fontSize: 20}}
-						glyph={'icon-simple-line-icons-note'}
-						onClick={this.handleEdit}
-						data-item-id={tag.id}
-					/>
-					<Icon
-						className={tag.is_active === 1 ? 'fg-deepred': 'fg-darkgreen'}
-						style={{fontSize: 20}}
-						glyph={this.getStatusIcon(tag.is_active)}
-						onClick={this.handleState}
-						data-item-id={tag.id}
-						data-item-status={tag.is_active}
-   					 />
+					<DataTable.Actions id={'item-actions-' + item.id}>
+						{
+							this.permissions.edit &&
+							<DataTable.Action
+								text='Edit'
+								glyph='fa-edit'
+								onClick={this.edit}
+								data-item-id={item.id}/>
+						}
+						{
+							this.permissions.delete &&
+							<DataTable.Action
+								text='Remove'
+								glyph='fa-trash'
+								onClick={this.remove}
+								data-item-id={item.id}/>
+						}
+					</DataTable.Actions>
 				</td>
 			</tr>
-		)
+		));
 	}
 
-	getStatusIcon(status) {
-		switch(status) {
-			case 0:
-				return 'icon-simple-line-icons-check';
-			case 1:
-				return 'icon-simple-line-icons-close';
-			case -1:
-				return 'icon-fontello-spin4';
-		}
-	}
-	startAddNew() {
-		this.props.dispatch(actions.tag.startAdd());
-	}
-
-	viewList() {
-		this.props.dispatch(actions.tag.viewList())
-	}
-
-	changePage(page) {
-		this.props.router.push(
-			url.format({
-				pathname: this.props.location.pathname,
-				query: {
-					...this.props.location.query,
-					page: page
-				}
-			})
-		);
-	}
-
-	getTagType(tagType){
+	static getTagType(tagType){
 		switch(tagType) {
 			case 0:
-				return 'Services';
+				return 'Attendance';
 			case 1:
-				return 'Specializations';
+				return 'Exam';
 			case 2:
-				return 'Education Qualification';
+				return 'Leave';
 			case 3:
-				return 'Education Colleage/University';
+				return 'Assignment';
 			case 4:
-				return 'Registration Council';
+				return 'Complaint';
 			case 5:
-				return 'Membership Councils';
+				return 'Conduct';
 			case 6:
-				return 'Chonic Diseases';
+				return 'Remarks';
 			case 7:
-				return 'Article Health Intrest Topics';
+				return 'Result';
 			case 8:
-				return 'SYMPTOMS for Doctors Clinic search';
-			case 9:
-				return 'Problem Type';
+				return 'Timetable';			
 		}
 	}
 
-
-	getNoDataRow(__) {
-		return (
-			<tr key={0}>
-				<td colSpan={4}>{__('No data found')}</td>
-			</tr>
-		)
-	}
-
-	updateData(name, value){
-		this.props.dispatch({
-			type:'UPDATE_DATA_VALUE',
-			name,
-			value
-		});
-	}
-
-	save(){
-		this.props.dispatch(
-			actions.tag.save(this.props, this.props.session.id)
-		);
-	}
-
-	edit(itemId) {
-		this.props.dispatch(
-			actions.tag.edit(this.props, itemId)
-		);
-	}
-
-	changeStatus(itemId, status) {
-		this.props.dispatch(
-			actions.tag.changeStatus(
-				this.props,
-				itemId,
-				status
-			)
-		);
-	}
-	handleDataTag(){
-
+	static getTagTypeOptions(__) {
+		return [
+			{
+				value: '3',
+				label: __('Assignment')
+			},
+			{
+				value: '0',
+				label: __('Attendance')
+			},
+			{
+				value: '1',
+				label: __('Exam')
+			},
+			{
+				value: '2',
+				label: __('Leave')
+			},
+			{
+				value: '4',
+				label: __('Complaint')
+			},
+			{
+				value: '5',
+				label: __('Conduct')
+			},
+			{
+				value: '6',
+				label: __('Remarks')
+			},
+			{
+				value: '7',
+				label: __('Result')
+			},
+			{
+				value: '8',
+				label: __('Timetable')
+			}
+		];
 	}
 }

@@ -4,16 +4,12 @@ import path from 'path';
 import express from 'express';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
-import React from 'react';
-import ReactDOMServer from 'react-dom/server';
 import session from 'express-session';
 import _FileStore from 'session-file-store';
 
-import {
-	setupReducers,
-	renderHTMLString,
-} from './rubix/node/redux-router';
-import RubixAssetMiddleware from './rubix/node/RubixAssetMiddleware';
+import {setupReducers} from './src/store';
+import renderHTMLString from './src/renderHTMLString';
+import RubixAssetMiddleware from './src/RubixAssetMiddleware';
 
 import {
 	host,
@@ -21,25 +17,24 @@ import {
 	ssl_options,
 	ssl_port,
 	liveWebsite,
-} from "./api/config";
-
+} from './api/config';
+import io, {websocket} from './io';
 import api from './api';
-import io from './io';
 import extra from './extra';
 import routes from './src/routes';
 import reducers from './src/redux/reducers';
 import Redirect from './src/Redirect';
 
 const ltr = RubixAssetMiddleware('ltr'),
-		rtl = RubixAssetMiddleware('rtl');
+	rtl = RubixAssetMiddleware('rtl');
 
 function assetMiddleware(req, res, next) {
-	if (req.session.lang && req.session.lang.dir === 'rl')
+	if (req.session.lang && ((req.session.lang.dir || req.session.lang.f_dir) === 'rl'))
 		rtl(req, res, next);
 	else
 		ltr(req, res, next);
 }
-		
+
 setupReducers(reducers);
 
 const FileStore = _FileStore(session);
@@ -57,12 +52,11 @@ const the_session = session({
 let app = express();
 
 app.set('views', path.join(process.cwd(), 'views'));
-app.set('view engine', 'pug');
+app.set('view engine', 'ejs');
 
 app.use((req, res, next) => {
-	let hostname = req.hostname;
-	if (hostname !== host) {
-		res.redirect((ssl_options ? 'https://' : 'http://') + host + req.originalUrl)
+	if (req.hostname !== host) {
+		res.redirect((ssl_options ? 'https://' : 'http://') + host + req.originalUrl);
 	} else {
 		next();
 	}
@@ -78,21 +72,21 @@ app.get('/setLanguage/:id/:dir/:code', function (req, res) {
 	req.session.save(() => res.redirect(req.headers.referer || '/'));
 });
 
-app.get('/setHospital/:id', function (req, res) {
-	let
-		hospitalId = parseInt(req.params.id),
-		hospitals = req.session.siteAdmin.allHospitalProfiles;
-	for (var i = hospitals.length - 1; i >= 0; i--) {
-		if (hospitals[i].id === hospitalId) {
-			req.session.siteAdmin.associatedProfileData = hospitals[i];
+app.get('/setAcademicSession/:id', function (req, res) {
+	let sessionId = parseInt(req.params.id),
+		academicSessions = req.session.siteAdmin.userdetails.academicSessions;
+	for (let i = academicSessions.length - 1; i >= 0; i--) {
+		if (academicSessions[i].id === sessionId) {
+			req.session.siteAdmin.selectedSession = academicSessions[i];
 			break;
 		}
 	}
-	req.session.save(() => res.redirect('/hospital/profile'));
+	req.session.save(() => res.redirect(req.headers.referer || '/'));
 });
 
-app.use(api);
 app.use(extra);
+app.use(api);
+app.use('/socket.io', io);
 
 app.get('*', assetMiddleware, (req, res, next) => {
 	renderHTMLString(routes, req, (error, redirectLocation, data) => {
@@ -129,8 +123,9 @@ app.get('*', assetMiddleware, (req, res, next) => {
 });
 
 if (ssl_options) {
+	/*eslint no-console: 'off'*/
 	const server = https.createServer(ssl_options, app);
-	io(server, the_session);
+	server.on('upgrade', websocket);
 	server.listen(ssl_port, () => {
 		console.log(`Node.js app is running on ${ssl_port}`);
 	});
@@ -148,7 +143,7 @@ if (ssl_options) {
 	}).listen(port);
 } else {
 	const server = http.createServer(app);
-	io(server, the_session);
+	server.on('upgrade', websocket);
 	server.listen(port, () => {
 		console.log(`Node.js app is running on ${port}`);
 	});

@@ -1,0 +1,23 @@
+.route-adresses {
+	> div {
+		position: relative;
+		border: solid 2px #DCDCDC;
+		padding: 10px;
+		margin-bottom: 5px;
+		background-color: white;
+
+		> div {
+			width: 90%;
+			span:first-child {
+				font-weight: bold;
+			}
+		}
+
+		> .controls {
+			position: absolute;
+			display: inline-block;
+			right: 5px;
+			top: 10px;
+		}
+	}
+}

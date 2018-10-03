@@ -1,29 +1,18 @@
 import {combineReducers} from 'redux';
-
-function viewState(state = null, action) {
-	switch(action.type) {
-		case 'INIT_MODULE':
-		case 'VIEW_CITY_LIST':
-			return 'LIST';
-		case 'START_ADD_CITY':
-		case 'SET_CITY_EDIT_DATA':
-			return 'DATA_FORM';
-		default:
-			return state;
-	}	
-}
+import {query, filters, pageInfo} from './common';
 
 function items(state = [], action) {
 	switch(action.type) {
 		case 'INIT_MODULE':
 			return action.data.data;
-		case 'CHANGE_ITEM_STATUS':
-			var itemId = parseInt(action.itemId);
+		case 'CHANGE_CITY_STATUS': {
+			let itemId = action.itemId;
 			return state.map(item => {
 				if (item.id === itemId)
-					item.is_active = parseInt(action.status);
+					item.is_active = action.status;
 				return item;
 			});
+		}
 		default:
 			return state;
 	}
@@ -32,6 +21,7 @@ function items(state = [], action) {
 function errors(state = {}, action) {
 	switch(action.type) {
 		case 'INIT_MODULE':
+		case 'HIDE_DATA_MODAL':
 		case 'START_ADD_CITY':
 		case 'SET_CITY_EDIT_DATA':
 			return {};
@@ -42,133 +32,69 @@ function errors(state = {}, action) {
 	}
 }
 
-function pageInfo(state = null, action) {
+function item(state = false, action) {
 	switch(action.type) {
 		case 'INIT_MODULE':
-			return {
-				totalData: action.data.totalData,
-				pageCount: action.data.pageCount,
-				pageLimit: action.data.pageLimit,
-				currentPage: action.data.currentPage
-			};
-		default:
-			return state;
-	}
-}
-
-function filter(state, action) {
-	switch(action.type) {
-		case 'INIT_MODULE':
-			return state || {};
-		case 'RESET_FILTERS':
-			return {};
-		case 'UPDATE_FILTER':
-			var newState = {...state};
-			if (action.value) {
-				newState[action.name] = action.value;
-			} else {
-				delete newState[action.name];
-			}
-			return newState;
-		default:
-			return state || null;
-	}
-}
-
-const defaultDataItem = {
-	name: '',
-	alias: '',
-	stateId: '',
-	countryId: '',
-	is_active: ''
-}
-
-function item(state = defaultDataItem, action) {
-	switch(action.type) {
+		case 'HIDE_DATA_MODAL':
+			return false;
+		case 'START_CITY_EDIT':
+			return null;
 		case 'START_ADD_CITY':
-			return defaultDataItem;
 		case 'SET_CITY_EDIT_DATA':
-			return {
-				id: action.data.data.id,
-				alias: action.data.data.alias,
-				stateId: action.data.data.stateId,
-				countryId: action.data.data.countryId,
-				name: action.data.data.citydetails[0].name,
-				detailId: action.data.data.citydetails[0].id,
-				is_active: action.data.data.is_active
-			};
-		case 'LOAD_AVAILABLE_STATE':
-		case 'SET_AVAILABLE_STATE':
+			return action.data;
+		case 'UPDATE_DATA_VALUE':
 			return {
 				...state,
-				stateId: ''
-			}
-		case 'UPDATE_CITY_DATA_VALUE':
-			let newState = {...state};
-			newState[action.name] = action.value;
-			return newState;
+				[action.name]: action.value,
+			};
+		case 'RESET_STATE_COUNTRY':
+			return {
+				...state,
+				countryId: null,
+				stateId: null,
+			};
+		case 'CHANGING_STATE_COUNTRY':
+			return {
+				...state,
+				countryId: action.value,
+				stateId: null,
+			};
 		default:
 			return state;
 	}
 }
 
-const defaultHelperData = {
-	countries: [],
-	availableStates: [],
-	loadingAvailableStates: false,
-};
-
-function helperData (state = defaultHelperData, action) {
+function meta (state = {}, action) {
 	switch(action.type) {
 		case 'START_ADD_CITY': 
 			return {
-				countries: action.data.countries.map(item => ({
-					value: item.id,
-					label: item.countrydetails[0].name
-				})),
-				availableStates: [],
-				loadingAvailableStates: false
+				countries: action.countries,
+				states: false,
 			};
 		case 'SET_CITY_EDIT_DATA':
 			return {
-				countries: action.data.countries.map(item => ({
-					value: item.id,
-					label: item.countrydetails[0].name
-				})),
-				availableStates: action.data.states.map(item => ({
-					value: item.id,
-					label: item.statedetails[0].name
-				})),
-				loadingAvailableStates: false
+				countries: action.countries,
+				states: action.states,
 			};
-		case 'LOAD_AVAILABLE_STATE':
-			return {
-				...state,
-				availableStates: [],
-				loadingAvailableStates: true
-			};
-		case 'SET_AVAILABLE_STATE':
-			return {
-				...state,
-				availableStates: action.data.map(item => ({
-					label: item.statedetails[0].name,
-					value: item.id
-				})),
-				loadingAvailableStates: false
-			};
+		case 'RESET_STATE_COUNTRY':
+			return {...state, states: false};
+		case 'CHANGING_STATE_COUNTRY':
+			return {...state, states: null};
+		case 'SET_CITY_STATES':
+			return {...state, states: action.data};
 		default:
 			return state;
 	}
 }
 
 const reducer = combineReducers({
-	viewState,
 	items,
 	errors,
-	pageInfo,
-	filter,
 	item,
-	helperData
+	meta,
+	query,
+	filters,
+	pageInfo,
 });
 
 export default reducer;

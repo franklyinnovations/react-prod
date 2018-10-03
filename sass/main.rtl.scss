@@ -1,3 +1,82 @@
 @import "main";
-#front2 .patient-search-sec:after{transform: rotateY(180deg)}
-#doc-search-profile:after{transform: rotateY(180deg);left: inherit;right:-15px;}
+
+.view {
+  .click-btn.left {
+    img {
+      transform: scaleX(-1);
+    }
+  }
+
+  .click-btn.right {
+    img {
+      transform: none;
+    }
+  }
+}
+
+.popover {
+  left: auto;
+  right: 0;
+}
+
+
+#front {
+    .site-header .site-nav .menu li a { display: block;}   
+	.banner-section { background-size: cover;
+	 .banner-top{
+	  transform: rotateY(180deg);
+	 }
+    .banner-bottom{
+     transform: rotateY(180deg);
+    }
+  }
+  .sms-section {
+    .img-holder { right: 0; left: inherit; 
+      img { float: right; }
+    } 
+  }
+  .school-bus { transform: rotateY(180deg); }
+  .home-vector { left: 0; right: inherit; }
+  .happy-kids { left: 0 !important; right: inherit !important; transform: rotateY(180deg);  }
+
+  .customer-slider-wrapper .slider-action span.slide-next i { transform: rotateY(180deg); }
+  .customer-slider-wrapper .slider-action span.slide-prev i { transform: rotateY(180deg); }
+
+  .login-banner-section .banner-top { transform: rotateY(180deg); background-position: 100% 0; }
+  .login-banner-section .banner-bottom { transform: rotateY(180deg); background-position: 0% 0; }
+  .login-user { transform: rotateY(180deg); }
+  .gohome i  { transform: rotateY(180deg); }
+  .login-form li.username , .login-form li.login-password  { background-position: 3% 50%; }
+  .client-content .fa { transform: rotateY(180deg);  }
+}
+
+
+@media (max-width: 1199px) {
+#front {
+  .sms-section {
+    .img-holder { right: 0; left: inherit; 
+      img { max-width: 70%; float: right; }
+    } 
+   } 
+ }
+}
+
+@media (max-width: 991px) {
+	#front {
+	  .sms-section { padding: 30px 0 !important; 
+		  	.img-holder {  
+			      img { max-width: 50%; float: right; }
+			    } 
+          .sms-content { padding-right: 300px; padding-left: inherit; }
+	   }
+	}
+}
+
+@media (max-width: 767px) {
+	#front {
+	  .sms-section { padding: 30px 0 !important; 		  	
+          .sms-content { padding-right: 0; padding-left: inherit; }
+	   }
+	}
+}
+

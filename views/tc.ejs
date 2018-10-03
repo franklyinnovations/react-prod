@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Transfer certificate</title>
+	<link href="https://fonts.googleapis.com/css?family=Lato:400,900" rel="stylesheet"/>
+<style type="text/css">
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+html {
+	font-family: 'Lato', sans-serif;
+}
+
+body {
+	color: #282828;
+	font-size: 15px;
+	background-color: #ccc;
+}
+
+.wrapper {
+	background: white;
+	margin: 0 auto;
+	width: 210mm;
+	height: 297mm;
+	padding: 15px;
+	page-break-after: always;
+}
+
+.wrapper-inner {
+	width: 100%;
+	padding: 35px 25px 15px;
+}
+
+h1 {
+	font-size: 30px;
+	margin: 0 0 10px;
+	font-weight: bold;
+}
+
+h2 {
+	font-size: 22px; 
+	margin:35px 0 10px; 
+	font-weight: bold;
+}
+
+p  {
+	margin-bottom: 10px;
+	font-size: 16px;
+}
+.text-center { text-align: center; }
+.text-uppercase { text-transform: uppercase; padding-top: 20px; }
+.top-block, .form-block {clear: both;}
+.top-block { margin-bottom: 50px; margin-top: 50px}
+.school-logo-block {clear: both; margin-bottom: 25px;}
+.school-logo-block h2 { margin-top:0;  }
+.school-logo-block img {
+	max-height: 100px;
+	max-width: 100%;
+}
+.form-block { clear: both; padding: 0 40px; }
+.form-block .half-width { width: 50%; float: left; margin-bottom: 30px;}
+.half-width + .half-width { text-align: right; }
+.form-block .full-width { width: 100%; clear: both; margin-bottom: 25px;}
+.form-block input { border:none; border-bottom:1px solid #000; outline: none; }
+.form-block label { margin-right: 5px; color: #282828; }
+.form-block span { margin: 0; color: #000; font-weight: bold;  }
+.form-block .form-footer { margin-top: 90px; display: table; width: 100%}
+.form-block .one-third-width {width: 33.33%; display: table-cell; text-align: center; vertical-align: bottom;}
+.form-block .one-third-width img {max-height: 60px; max-width: 100%;}
+.right-align-block { display: inline-block; text-align: left;}
+</style>
+</head>
+<body>
+	<%if (locals.phantomZoom) {%>
+	<script type="text/javascript">
+		document.body.style.zoom = <%=phantomZoom%>;
+	</script>
+	<% } %>
+	<% students.forEach(function(item){ %>
+	<div class="wrapper">
+		<div class="wrapper-inner">
+			<div class="text-center top-block">
+				<h1><%- institute.institutedetails[0].name%></h1>
+				<p><%- institute.institutedetails[0].tagline%></p> 
+				<p><%- institute.institutedetails[0].address%></p>			
+			</div>
+			<div class="form-block">
+				<div class="form-top">				
+					<div class="half-width">				   
+					</div>
+					<div class="half-width">
+						<label for="">Admission No.:</label>
+					    <span><%- item.student.enrollment_no%></span>	
+					</div>	
+				</div>			
+			</div>
+
+			<div class="text-center school-logo-block">		
+				<% if(institute.institute_logo != 'public/uploads/icon/institute.png'){%>	
+					<img src="<%- servicePath + institute.institute_logo%>" alt="">	
+				<%}%>
+				<h2 class="text-uppercase">School Leaving Certificate</h2>
+				<p>Session: <%- academicname%></p>
+			</div>
+
+			<div class="form-block">
+				<div class="form-top">
+					<div class="full-width">
+						<label for="">Student Name:</label>
+						<span><%- item.student.user.userdetails[0].fullname%></span>				    
+					</div>
+					<div class="full-width">
+						<label for="">Father’s Name:</label>
+					    <span><%- item.student.studentdetails[0].father_name%></span>
+					</div>
+					<div class="full-width">
+						<label for="">Mother’s Name:</label>
+					    <span><%- item.student.studentdetails[0].mother_name%></span>
+					</div>
+					<div class="half-width">
+						<label for="">Date of Birth:</label>
+					    <span><%- moment(item.student.dob).format(siteAdmin.userdetails.date_format)%></span>
+					</div>
+					<div class="half-width">
+						<label for="">Class:</label>
+					    <span><%- classdata.class.classesdetails[0].name%></span>
+					</div>
+					<div></div>
+					<div class="half-width">
+						<label for="">Admission Date:</label>
+					    <span><%- moment(item.student.doa).format(siteAdmin.userdetails.date_format)%></span>
+					</div>
+					<div class="half-width">
+						<label for="">Relieving Date:</label>
+					    <span><%- moment(item.releaving_date, 'YYYY-MM-DD').format(siteAdmin.userdetails.date_format)%></span>
+					</div>
+					<div class="full-width">
+						<label for="">Attendance in Current Session:</label>
+					    <span><%- (institute.userId == 164 && item.BulkPresentDay !== null) ? item.BulkPresentDay :item.StudentAttendance%></span>
+					    <label for="">out off</label>
+					    <span><%-(institute.userId == 164 && item.BulkTotalDay !== null) ? item.BulkTotalDay : item.totalAttendance%></span>
+					</div>
+					<div class="full-width">
+						<label for="">Student Conduct:</label>
+					    <span><%- item.conduct%> </span>
+					</div>
+					<% if(item.result){%>
+					<div class="full-width">
+						<label for="">Student Result:</label>
+					    <span><%- item.result%> </span>
+					</div>
+					<% }%>
+					<div class="full-width">
+					    <label>This is being certified that student does not have any dues and he/she is liable to be relieved from the School.</label>
+					</div>
+				</div>
+				    <div class="form-footer">					
+						<div class="one-third-width">
+							<% if(signaturedata.prepared_by && signaturedata.prepared_by !== null){%>
+								<img src="<%- servicePath + signaturedata.prepared_by%>" alt="" height="70">
+							<%}%>	
+							<p>Prepared By</p>
+							<label for="">Date:</label>
+						    <span><%- moment(item.releaving_date, 'YYYY-MM-DD').format(siteAdmin.userdetails.date_format)%></span>
+					    </div>
+					    <div class="one-third-width">
+					    	<div class="center-align-block">
+					    		<% if(signaturedata.checked_by && signaturedata.checked_by !== null){%>
+						    		<img src="<%- servicePath + signaturedata.checked_by%>" alt="" height="70">	
+						    	<%}%>
+								<p>Checked By</p>
+								<label for="">Date:</label>
+							    <span><%- moment(item.releaving_date, 'YYYY-MM-DD').format(siteAdmin.userdetails.date_format) %></span>
+							</div>
+					    </div>
+					    <div class="one-third-width">
+					    	<div>
+					    		<% if(signaturedata.principal && signaturedata.principal !== null){%>
+						    		<img src="<%- servicePath + signaturedata.principal%>" alt="" height="70">	
+						    	<%}%>
+								<p>Principal</p>
+								<label for="">Date:</label>
+							    <span><%- moment(item.releaving_date, 'YYYY-MM-DD').format(siteAdmin.userdetails.date_format) %></span>
+							</div>
+					    </div>
+					</div>			
+			</div>	
+			</div>
+		</div>
+	</div>
+	<% });%>
+</body>
+</html>

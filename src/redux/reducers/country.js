@@ -1,29 +1,18 @@
 import {combineReducers} from 'redux';
+import {query, filters, pageInfo} from './common';
 
-function viewState(state = null, action) {
-	switch(action.type) {
-		case 'INIT_MODULE':
-		case 'VIEW_COUNTRY_LIST':
-			return 'LIST';
-		case 'START_ADD_COUNTRY':
-		case 'SET_COUNTRY_EDIT_DATA':
-			return 'DATA_FORM';
-		default:
-			return state;
-	}	
-}
-
-function countries(state = [], action) {
+function items(state = [], action) {
 	switch(action.type) {
 		case 'INIT_MODULE':
 			return action.data.data;
-		case 'CHANGE_ITEM_STATUS':
-			var itemId = parseInt(action.itemId);
+		case 'CHANGE_ITEM_STATUS': {
+			let itemId = parseInt(action.itemId);
 			return state.map(country => {
 				if (country.id === itemId)
 					country.is_active = parseInt(action.status);
 				return country;
 			});
+		}
 		default:
 			return state;
 	}
@@ -42,49 +31,20 @@ function errors(state = {}, action) {
 	}
 }
 
-function pageInfo(state = null, action) {
-	switch(action.type) {
-		case 'INIT_MODULE':
-			return {
-				totalData: action.data.totalData,
-				pageCount: action.data.pageCount,
-				pageLimit: action.data.pageLimit,
-				currentPage: action.data.currentPage
-			};
-		default:
-			return state;
-	}
-}
-
-function filter(state, action) {
-	switch(action.type) {
-		case 'INIT_MODULE':
-			return state || {};
-		case 'RESET_FILTERS':
-			return {};
-		case 'UPDATE_FILTER':
-			var newState = {...state};
-			if (action.value) {
-				newState[action.name] = action.value;
-			} else {
-				delete newState[action.name];
-			}
-			return newState;
-		default:
-			return state || null;
-	}
-}
 
 const defaultDataItem = {
 	name: '',
 	iso_code: '',
 	currencyId: '',
 	code: '',
-	is_active: ''
-}
+	is_active: true
+};
 
-function country(state = defaultDataItem, action) {
+function item(state = defaultDataItem, action) {
 	switch(action.type) {
+		case 'INIT_MODULE':
+		case 'HIDE_DATA_MODAL':
+			return false;
 		case 'START_ADD_COUNTRY':
 			return defaultDataItem;
 		case 'SET_COUNTRY_EDIT_DATA':
@@ -97,10 +57,14 @@ function country(state = defaultDataItem, action) {
 				detailId: action.data.data.countrydetails[0].id,
 				is_active: action.data.data.is_active
 			};
-		case 'UPDATE_DATA_VALUE':
+		case 'UPDATE_DATA_VALUE': {
 			let newState = {...state};
 			newState[action.name] = action.value;
+			if((action.name === 'currencyId' || action.name === 'iso_code') && !action.value){
+				newState[action.name] = '';
+			}
 			return newState;
+		}
 		default:
 			return state;
 	}
@@ -113,6 +77,17 @@ const defaultHelperData = {
 
 function helperData (state = defaultHelperData, action) {
 	switch(action.type) {
+		case 'INIT_MODULE': 
+			return {
+				currencies: action.data.currencies.map(item => ({
+					value: item.id,
+					label: item.currency_name+'('+item.currency_symbol+')'
+				})),
+				isoCodes: action.data.isoCodes.map(item => ({
+					value: item.iso,
+					label: item.name+'('+item.iso+')'
+				}))
+			};
 		case 'START_ADD_COUNTRY': 
 			return {
 				currencies: action.data.currencies.map(item => ({
@@ -140,14 +115,19 @@ function helperData (state = defaultHelperData, action) {
 	}
 }
 
+const defaultQueryData = {
+	queryItems: [],
+	filters: [],
+};
+
 const reducer = combineReducers({
-	viewState,
-	countries,
+	items,
+	item,
+	helperData,
 	errors,
+	query,
+	filters,
 	pageInfo,
-	filter,
-	country,
-	helperData
 });
 
 export default reducer;
